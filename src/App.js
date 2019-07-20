@@ -1,26 +1,28 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useRef, useEffect } from 'react'
+import './App.css'
+
+const Colors = {
+  Deep: '#121258',
+  Med: '#5ba9ff',
+  Shallow: '#7ccbff',
+  Light: '#f3f1f1',
+  Outline: '#000d16'
+}
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <main>
+      <header>
+        <h2 className={'title title-subtitle'}>sailsongs of</h2>
+        <h1 className={'title title-title'}>scattershell</h1>
       </header>
-    </div>
-  );
+      <section>
+        <p>
+          Hello <b> foobar </b>world
+        </p>
+      </section>
+    </main>
+  )
 }
 
-export default App;
+export default App
