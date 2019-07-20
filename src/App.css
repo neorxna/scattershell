@@ -73,3 +73,8 @@ ul li {
   font-style: italic;
   margin-top: 1em;
 }
+
+.map-svg {
+  width: 300px;
+  height: 300px;
+}

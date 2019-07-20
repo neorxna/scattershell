@@ -1,35 +1,66 @@
 import React, { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { Island, CurrentIsland } from './Island'
+import ScattershellLocations from './Locations'
+import ScattershellMap from './Map'
 
 const json = _ => JSON.stringify(_, undefined, 4)
 
-const Colors = {
-  Deep: '#121258',
-  Med: '#5ba9ff',
-  Shallow: '#7ccbff',
-  Light: '#f3f1f1',
-  Outline: '#000d16'
-}
+/* island state:
+ - population ( adds in exchange for food, up to numDwellings * 5 or population limit)
+ - hasTemple
+ - isDiscovered
+ - boonsAndBurdens (when island is discovered, it gets initialised with source list)
+ - numDwellings ( allows higher population. requires wood)
+ - numTreasures ( slowly add over time with temple. gives food and wood bonus when clicked)
+
+ global state:
+ - wood ( auto increments * multipliers)
+ - food (auto increments * multipliers)
+ - wind (varies randomly but always > 0)
+
+ island disovered: 
+ - set isDiscovered=true on dest
+ - copy source boonsAndBurdens to dest
+ - initialise with number of people (outrigger, small fleet or large fleet)
+ */
 
 function App() {
   let interval = null
 
   const [wind, setWind] = useState(0)
-  const updateWind = () => {
-    let newWind = setWind()
-  }
+  const [progressItems, setProgressItems] = useState([])
 
   const gameTick = () => {
-    console.log('game tick')
+    // TODO increase food and wood each tick, randomly vary wind
+
+    // if progressItems have reached their duration, trigger them
+    let ready = progressItems.filter(x => x.progress >= x.duration)
+    Array.prototype.forEach(item => {
+      item.action()
+    }, ready)
+    // TODO remove those progressItems
+
+    // update the state of any progressItems
+    setProgressItems(
+      progressItems.map(item => ({
+        ...item,
+        progress: (item.progress += 1)
+      }))
+    )
   }
 
   useEffect(() => {
     interval = setInterval(gameTick, 500)
+
     return () => {
       clearInterval(interval)
     }
   })
+
+  const [discoveredIslands, setDiscoveredIslands] = useState(
+    Object.keys(ScattershellLocations)
+  )
 
   /*
   const [resources, setResources] = useState(
@@ -43,8 +74,17 @@ function App() {
     })
   }*/
 
-  function launchExpedition(source, dest, type) {
-    return
+  function launchExpedition(source, destName, type) {
+    // TODO type of expedition, spend resources
+    let duration = source.neighbourDistance[destName] * 100 // number of game ticks
+    let name = `Expedition from ${source.name} to ${destName}`
+    let action = () => {
+      //mark this island as discovered
+      setDiscoveredIslands([...discoveredIslands, destName])
+    }
+    let progress = 0
+    setProgressItems([...progressItems, { duration, name, action }])
+    // need useEffect to periodically go through each progressItem
   }
 
   return (
@@ -62,6 +102,10 @@ function App() {
               <a href=';'>save game</a>
             </li>
           </ul>
+        </section>
+
+        <section>
+          <ScattershellMap />
         </section>
 
         <section>
@@ -89,7 +133,7 @@ function App() {
       </aside>
 
       <section className={'right'}>
-        <Island location={{ x: 5, y: 5 }} />
+        <Island />
         <br />
         <CurrentIsland launchExpedition={launchExpedition} />
       </section>

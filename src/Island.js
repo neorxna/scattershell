@@ -29,12 +29,33 @@ const IslandMaxPopulations = {
   [IslandTypes.Large]: 1000
 }
 
+const defaultIslandProps = {
+  id: '1',
+  name: 'Birdstar',
+  trueName: 'Artheenkwas',
+  isDiscovered: true,
+  x: 30,
+  y: 30,
+  type: IslandTypes.Guano,
+  resources: [],
+  neighbours: ['Great Ark', 'Shellcove', 'Holystone'],
+  neighbourDistance: {
+    'Great Ark': 359,
+    Shellcove: 28,
+    Holystone: 62
+  },
+  population: 0,
+  numTreasures: 0,
+  numDwellings: 0,
+  hasTemple: false
+}
+
 const DevelopmentLevel = {
-  Undeveloped: 0,
-  Burgeoning: 1,
-  Developed: 2,
-  HighlyDeveloped: 3,
-  Advanced: 4
+  Undeveloped: 'undeveloped',
+  Burgeoning: 'burgeoning',
+  Developed: 'developed',
+  HighlyDeveloped: 'highly developed',
+  Advanced: 'advanced'
 }
 
 const developmentLevel = props => {
@@ -67,19 +88,16 @@ function CurrentIsland(_props) {
         .filter(neighbour => !neighbour.discovered)
         .map(neighbour => (
           <li>
-            Launch expedition to {neighbour}
-            <br />
-            <i>({props.neighbourDistance[neighbour]} km away</i>
+            Launch expedition to {neighbour} -
+            <i> {props.neighbourDistance[neighbour]} km away</i>
             <br />
             <ul>
               <li>
                 <a
                   href={''}
-                  onClick={props.launchExpedition(
-                    props.name,
-                    neighbour,
-                    'outrigger'
-                  )}
+                  onClick={() =>
+                    props.launchExpedition(props, neighbour, 'outrigger')
+                  }
                 >
                   Launch outrigger
                 </a>{' '}
@@ -88,11 +106,9 @@ function CurrentIsland(_props) {
               <li>
                 <a
                   href={''}
-                  onClick={props.launchExpedition(
-                    props.name,
-                    neighbour,
-                    'smallFleet'
-                  )}
+                  onClick={() =>
+                    props.launchExpedition(props.name, neighbour, 'smallFleet')
+                  }
                 >
                   Launch small fleet
                 </a>{' '}
@@ -101,11 +117,9 @@ function CurrentIsland(_props) {
               <li>
                 <a
                   href={''}
-                  onClick={props.launchExpedition(
-                    props.name,
-                    neighbour,
-                    'largeFleet'
-                  )}
+                  onClick={() =>
+                    props.launchExpedition(props.name, neighbour, 'largeFleet')
+                  }
                 >
                   Launch large fleet
                 </a>{' '}
@@ -132,8 +146,8 @@ function CurrentIsland(_props) {
           build dwelling
         </a>
         <div className={'island-options-details'}>
-          Build a dwelling to house more people on this island. 
-          Up to five dwellings can be built on this island.
+          Build a dwelling to house more people on this island. Up to five
+          dwellings can be built on this island.
         </div>
       </li>
       <li>
@@ -183,25 +197,6 @@ function CurrentIsland(_props) {
   )
 }
 
-const defaultIslandProps = {
-  name: 'Birdstar',
-  trueName: 'Artheenkwas',
-  discovered: true,
-  location: { x: 5, y: 5 },
-  type: IslandTypes.Guano,
-  resources: [],
-  neighbours: ['Great Ark', 'Shellcove', 'Holystone'],
-  neighbourDistance: {
-    'Great Ark': 359,
-    Shellcove: 28,
-    Holystone: 62
-  },
-  population: 0,
-  numTreasures: 0,
-  numDwellings: 0,
-  hasTemple: false
-}
-
 function Island(_props) {
   const props = {
     ...defaultIslandProps,
@@ -211,4 +206,19 @@ function Island(_props) {
   return <></>
 }
 
-export { Island, CurrentIsland }
+const defaultTreasureProps = {
+
+}
+
+function Treasure(_props) {
+
+  // TODO add treasure tickers in App state
+  // when ticker reaches 100, can click Treasure again to receive boon
+  const props = {
+    ...defaultTreasureProps,
+    ..._props
+  }
+  return <a>Harvest the rewards of treasure</a>
+}
+
+export { Island, CurrentIsland, IslandTypes }
