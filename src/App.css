@@ -9,12 +9,9 @@ main {
   font-family: 'Open Sans', sans-serif;
 }
 
-header { 
+.title {
   color:#5ba9ff;
   text-shadow: 5px 5px var(--outline-color);
-}
-
-.title {
   letter-spacing: .04em;
   font-family: 'Londrina Solid', cursive;
   font-size: 6em;
@@ -25,4 +22,18 @@ header {
   
 }
 .title-title {
+}
+
+.game {
+  display: flex;
+}
+
+.left {
+  flex: 1;
+  max-width: 32em;
+}
+
+.right {
+  flex: 1;
+  margin: 0em 2em;
 }
