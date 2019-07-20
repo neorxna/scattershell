@@ -3,6 +3,10 @@
   --outline-color: #000d16;
 }
 
+a {
+  color: white;
+}
+
 main {
   margin: 1em;
   color: var(--light-color);
@@ -36,4 +40,36 @@ main {
 .right {
   flex: 1;
   margin: 0em 2em;
+}
+
+ul {
+  margin-bottom: 2em;
+  padding: 0px;
+}
+
+ul li {
+  margin-bottom: 1em;
+  list-style-type: none;
+  margin: 1em 0em;
+}
+
+.island-options li {
+  padding: 10px;
+  background-color: var(--light-color);
+  color: var(--outline-color);
+}
+
+.island-options a {
+  color: var(--outline-color);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.island-options-link {
+  font-size: 1.2em;
+}
+
+.island-options-details {
+  font-style: italic;
+  margin-top: 1em;
 }
