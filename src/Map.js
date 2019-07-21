@@ -5,6 +5,7 @@ import rough from 'roughjs/dist/rough.umd'
 import Colors from './Theme'
 import { IslandTypes } from './Island'
 import { link } from 'fs';
+import { throwStatement, whileStatement } from '@babel/types';
 
 const defaultScattershellMapProps = {
   places: [
@@ -24,16 +25,15 @@ const defaultScattershellMapProps = {
 
   paths: [],
   baseMarkerOptions: {
-    stroke: 'white',
-    fill: 'rgba(255,255,255,0.6)',
+    stroke: Colors.Outline,
+    fill: Colors.Outline, //Colors.Outline,
     hachureAngle: 65,
     roughness: 1.5
   },
 
   activePlaceOptions: {
-    fill: 'red',
-    roughness: 0,
-    stroke: 'white'
+    fill: Colors.Outline,
+    stroke: Colors.Outline
   },
 
   inactivePlaceOptions: {},
@@ -42,7 +42,7 @@ const defaultScattershellMapProps = {
     [IslandTypes.Rocks]: 5,
     [IslandTypes.Guano]: 10,
     [IslandTypes.Small]: 15,
-    [IslandTypes.Medium]: 25,
+    [IslandTypes.Medium]: 20,
     [IslandTypes.Large]: 35
   }
 }
@@ -76,10 +76,12 @@ function ScattershellMap(props) {
     }
 
     const xOffset = -25,
-      yOffset = -25
+      yOffset = -20
 
     const _places = places
     const opts = baseMarkerOptions
+
+    const righties = ['The Pip', 'Elder Island']
 
     const placeMarker = ({ name, x, y, type, markerOptions }) => {
       let circleOpts = {
@@ -105,18 +107,18 @@ function ScattershellMap(props) {
       draw
         .link('javascript:;')
         .text(place.name)
-        .fill(Colors.Shallow)
-        .x(place.x * 5 + xOffset)
-        .y(place.y * 5 + yOffset + sizes[place.type] / 2) //(place.isBig ? 30 : 20))
+        .fill(Colors.Outline)
+        .x(place.x * 5 + xOffset + (righties.indexOf(place.name) !== -1 ? 45 : 0))
+        .y(place.y * 5 + yOffset + (righties.indexOf(place.name) !== -1 ? -8 : sizes[place.type] / 2)) //(place.isBig ? 30 : 20))
         .font({
-          size: 16,
+          size: 14,
           anchor: 'middle'
         })
         .on('click', ()=>{props.setCurrentIsland(place.name)})
     }
 
     Object.values(_places).forEach(place => {
-      if (true || place.isDiscovered) {
+      if (place.isDiscovered) {
         let marker = placeMarker(place)
         svg.appendChild(marker)
         labelMarker(place)

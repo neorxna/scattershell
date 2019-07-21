@@ -2,10 +2,10 @@ import { IslandTypes } from './Island'
 import { ResourceTypes } from './Resources';
 
 const paths = [
-  ['The Morrigan', 'The Crook', 16],
-  ['The Crook', 'The Morrigan', 16],
-  ['The Morrigan', 'Great Arc', 20],
-  ['Great Arc', 'The Morrigan', 20],
+  ['Morrigan', 'The Crook', 16],
+  ['The Crook', 'Morrigan', 16],
+  ['Morrigan', 'Great Arc', 20],
+  ['Great Arc', 'Morrigan', 20],
   ['Fivestone', 'The Crook', 14],
   ['The Crook', 'Fivestone', 14],
   ['Shell Cove', 'Great Arc', 12],
@@ -26,8 +26,8 @@ const paths = [
   ['The Pip', 'Birdstar', 25],
   ['Brightreach', 'Afallon', 12],
   ['Afallon', 'Brightreach', 12],
-  ['Old Crone Island', 'Birdstar', 20],
-  ['Birdstar', 'Old Crone Island', 20],
+  ['Old Crone', 'Birdstar', 20],
+  ['Birdstar', 'Old Crone', 20],
   ['Gull\'s Rest', 'Shell Cove', 22],
   ['Shell Cove', 'Gull\'s Rest', 22],
   ['Mother', 'Shell Cove', 28],
@@ -38,8 +38,8 @@ const paths = [
   ['Mother', 'Younger Island', 15],
   ['Father', 'Mother', 10],
   ['Mother', 'Father', 10],
-  ['The Twins', 'Mother', 11],
-  ['Mother', 'The Twins', 11],
+  ['Twinstone', 'Mother', 11],
+  ['Mother', 'Twinstone', 11],
   ['Obsidian Point', 'Gull\'s Rest', 13],
   ['Gull\'s Rest', 'Obsidian Point', 13],
   ['Last Hope', 'Obsidian Point', 30],
@@ -73,7 +73,7 @@ const loc = (name, type, x, y, resources) => ({
 const ScattershellLocations = {
   'Shell Cove': loc('Shell Cove', IslandTypes.Small, 63, 49, []),
   'Great Arc': loc('Great Arc', IslandTypes.Large, 56, 58, []),
-  'The Morrigan': loc('The Morrigan', IslandTypes.Medium, 46, 75, [
+  'Morrigan': loc('Morrigan', IslandTypes.Medium, 46, 75, [
     'Fish',
     'RootVegetables',
     'BushFood',
@@ -102,7 +102,7 @@ const ScattershellLocations = {
     'Pigs',
     'SturdyWood'
   ]),
-  'The Twins': loc('The Twins', IslandTypes.Rocks, 92, 70, []),
+  'Twinstone': loc('Twinstone', IslandTypes.Rocks, 92, 70, []),
   Birdstar: loc('Birdstar', IslandTypes.Guano, 40, 30, ['Guano', 'Birds']),
   'Last Hope': loc('Last Hope', IslandTypes.Large, 97, 8, [
     'Shellfish',
@@ -121,7 +121,7 @@ const ScattershellLocations = {
     'Guano',
     'Birds'
   ]),
-  'Old Crone Island': loc('Old Crone Island', IslandTypes.Medium, 40, 10, [
+  'Old Crone': loc('Old Crone', IslandTypes.Medium, 40, 10, [
     'Coconuts',
     'RootVegetables',
     'Pigs',

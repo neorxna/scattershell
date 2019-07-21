@@ -169,7 +169,7 @@ function CurrentIsland(_props) {
           disabled={!canAddPerson}
           className={'island-options-link'}
         >
-          add person
+          👶 add person
         </a>
         <div className={'island-options-details'}>
           Add a person to this island's population. Costs <b>50 food</b>{' '}
@@ -184,7 +184,7 @@ function CurrentIsland(_props) {
           }}
           className={'island-options-link'}
         >
-          build dwelling
+          🏠 build dwelling
         </a>
         <div className={'island-options-details'}>
           Build a dwelling to house more people on this island. Up to five
@@ -195,7 +195,7 @@ function CurrentIsland(_props) {
       </li>
       <li>
         <a href=';' className={'island-options-link'}>
-          build temple
+          🙏 build temple
         </a>
         <div className={'island-options-details'}>
           <p>
@@ -230,12 +230,13 @@ function CurrentIsland(_props) {
           <p>
             <i>{IslandDescriptions[island.type]}</i>
           </p>
-          <ul style={{ fontSize: '.8em' }}>
+          <ul>
             <li>
               Development level: <b>{developmentLevel(island)}</b>
             </li>
             <li>
-              Population: <b>{island.population}</b>/{IslandMaxPopulations[island.type]}
+              Population: <b>{island.population}</b>/
+              {IslandMaxPopulations[island.type]}
             </li>
             <li>
               Treasures: <b>{island.numTreasures}</b>/10
@@ -247,23 +248,25 @@ function CurrentIsland(_props) {
               Has temple: <b>{island.hasTemple ? 'yes' : 'no'}</b>
             </li>
           </ul>
-          Resources on this island:
-          <ul style={{ fontSize: '.8em' }}>
-            {island.resources.map(res => {
-              return (
-                <li>
-                  <b>{res}</b>
-                  <br />
-                  <i>
-                    ({FoodPerResources[res]} food, {WoodPerResources[res]}{' '}
-                    materials per tick)
-                  </i>
-                </li>
-              )
-            })}
-          </ul>
         </section>
       </div>
+      <section>
+        <h3>Resources on this island:</h3>
+        <ul>
+          {island.resources.map(res => {
+            return (
+              <li>
+                <b>{res}</b>
+                <br />
+                <i>
+                  ({FoodPerResources[res]} food, {WoodPerResources[res]}{' '}
+                  materials per tick)
+                </i>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
       <section className={'current-island-options mv2'}>
         {islandOptions()}
       </section>

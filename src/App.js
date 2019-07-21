@@ -51,7 +51,7 @@ function App() {
       {}
     ) // { islandname: state }
   )
-  const [currentIsland, setCurrentIsland] = useState('The Morrigan')
+  const [currentIsland, setCurrentIsland] = useState('Morrigan')
   // the island that is currently being viewed.
 
   const getDiscoveredIslands = () =>
@@ -71,7 +71,7 @@ function App() {
   useEffect(() => {
     setIslandStates({
       ...islandStates,
-      'The Morrigan': { ...islandStates['The Morrigan'], isDiscovered: true }
+      'Morrigan': { ...islandStates['Morrigan'], isDiscovered: true }
     })
   }, [])
 
@@ -204,7 +204,7 @@ function App() {
       <aside className={'left'}>
         <h2 className={'title title-subtitle'}>sailsongs of</h2>
         <h1 className={'title title-title'}>scattershell</h1>
-        <div>version 0.3</div>
+        <div>version 0.4</div>
         {/*<pre>{json(progressItems)}</pre>*/}
         {/*<section>
           <ul style={{ padding: '0px' }}>
@@ -248,7 +248,7 @@ function App() {
           />
         </section>
 
-        <section>
+        {/*<section>
           <h3>total scores</h3>
           <ul>
             <li>islands discovered</li>
@@ -256,8 +256,8 @@ function App() {
             <li>dwellings</li>
             <li>treasures</li>
             <li>temples</li>
-          </ul>
-        </section>
+          <0/ul>
+        </section>*/}
       </aside>
 
       <section className={'right'}>
