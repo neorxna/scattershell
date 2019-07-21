@@ -41,26 +41,26 @@ main {
   flex: 1;
   margin: 0em 2em;
 }
-
+h1,h2,h3,h4 {
+  margin: 0px;
+}
 ul {
-  margin-bottom: 2em;
   padding: 0px;
 }
 
 ul li {
-  margin-bottom: 1em;
+  margin-bottom: .4em;
   list-style-type: none;
-  margin: 1em 0em;
 }
 
 .island-options li {
-  padding: 10px;
-  background-color: var(--light-color);
+  padding: 1em 0px;
+ /* background-color: var(--light-color); */
   color: var(--outline-color);
 }
 
 .island-options a {
-  color: var(--outline-color);
+  color: #5ba9ff;
   font-weight: bold;
   text-decoration: none;
 }
@@ -75,6 +75,72 @@ ul li {
 }
 
 .map-svg {
-  width: 300px;
-  height: 300px;
+  width: 100%;
+  height: 400px;
+}
+
+.current-island {
+  max-width: 80%;
+}
+
+.current-island-header { 
+  padding: 1.4em;
+  display: flex;
+  background: white;
+  color: var(--outline-color);
+  font-size: 1.4em;
+}
+.current-island-illustration {
+  flex: 1;
+}
+.current-island-illustration figure {
+  min-width: 320px;
+  overflow: hidden;
+}
+.current-island-illustration img {
+  display: block;
+  width: 100%;
+  margin: 0 -16%;
+}
+
+
+.current-island-info {
+  flex: 1;
+}
+
+.current-island-options {
+  background: white;
+  width: 100%;
+  padding: 1.4em;
+}
+
+.current-island-expeditions {
+  padding: 1.4em;
+  background: white;
+  color: var(--outline-color);
+}
+.current-island-expeditions a {
+  text-decoration: none;
+  font-weight: bold;
+  color:#5ba9ff;
+}
+
+.energy-meter {
+  font-size: 2em;
+}
+
+aside section {
+  margin: 2em 0em;
+}
+
+.title-subtitle {
+  margin-top: 0.4em;
+}
+
+.game-meters {
+  display: flex;
+}
+
+.game-meters section {
+  flex: 1;
 }

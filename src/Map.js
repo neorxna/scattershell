@@ -3,6 +3,8 @@ import './App.css'
 import * as SVG from 'svg.js'
 import rough from 'roughjs/dist/rough.umd'
 import Colors from './Theme'
+import { IslandTypes } from './Island'
+import { link } from 'fs';
 
 const defaultScattershellMapProps = {
   places: [
@@ -18,8 +20,9 @@ const defaultScattershellMapProps = {
     { id: 'c', x: 150, y: 250, name: 'C', isBig: true }
   ],
 
-  paths: [['a', 'b'], ['b', 'c']],
+  //paths: [['a', 'b'], ['b', 'c']],
 
+  paths: [],
   baseMarkerOptions: {
     stroke: 'white',
     fill: 'rgba(255,255,255,0.6)',
@@ -28,14 +31,19 @@ const defaultScattershellMapProps = {
   },
 
   activePlaceOptions: {
-    fill: 'yellow'
+    fill: 'red',
+    roughness: 0,
+    stroke: 'white'
   },
+
   inactivePlaceOptions: {},
-  thingOptions: {},
   pathOptions: {},
   sizes: {
-    bigPlace: 50,
-    smallPlace: 25
+    [IslandTypes.Rocks]: 5,
+    [IslandTypes.Guano]: 10,
+    [IslandTypes.Small]: 15,
+    [IslandTypes.Medium]: 25,
+    [IslandTypes.Large]: 35
   }
 }
 
@@ -46,6 +54,13 @@ function ScattershellMap(props) {
     const rc = rough.svg(svg)
     const draw = SVG(svg) //svg.js draw
 
+   /* draw.click(event => {
+      let x = event.clientX - draw.parent.offsetLeft,
+        y = event.clientY - draw.parent.offsetTop
+      
+        console.log(x,y)
+    })*/
+
     const {
       places,
       paths,
@@ -53,26 +68,29 @@ function ScattershellMap(props) {
       activePlaceOptions,
       inactivePlaceOptions,
       lineOptions,
-      sizes
+      sizes,
+      currentIsland // string
     } = {
       ...defaultScattershellMapProps,
       ...props
     }
 
-    // turn places prop into an object with place.id as key
-    const _places = places.reduce((map, obj) => ((map[obj.id] = obj), map), {})
+    const xOffset = -25,
+      yOffset = -25
+
+    const _places = places
     const opts = baseMarkerOptions
 
-    const placeMarker = ({ x, y, isBig, isActive, markerOptions }) => {
+    const placeMarker = ({ name, x, y, type, markerOptions }) => {
       let circleOpts = {
         ...opts,
-        ...(isActive ? activePlaceOptions : inactivePlaceOptions),
+        ...(name === currentIsland ? activePlaceOptions : inactivePlaceOptions),
         ...markerOptions
       }
       return rc.circle(
-        x,
-        y,
-        isBig ? sizes.bigPlace : sizes.smallPlace,
+        x * 5 + xOffset,
+        y * 5 + yOffset,
+        sizes[type],
         circleOpts
       )
     }
@@ -85,20 +103,24 @@ function ScattershellMap(props) {
 
     const labelMarker = place => {
       draw
+        .link('javascript:;')
         .text(place.name)
         .fill(Colors.Shallow)
-        .x(place.x)
-        .y(place.y + (place.isBig ? 30 : 20))
+        .x(place.x * 5 + xOffset)
+        .y(place.y * 5 + yOffset + sizes[place.type] / 2) //(place.isBig ? 30 : 20))
         .font({
           size: 16,
           anchor: 'middle'
         })
+        .on('click', ()=>{props.setCurrentIsland(place.name)})
     }
 
     Object.values(_places).forEach(place => {
-      let marker = placeMarker(place)
-      svg.appendChild(marker)
-      labelMarker(place)
+      if (true || place.isDiscovered) {
+        let marker = placeMarker(place)
+        svg.appendChild(marker)
+        labelMarker(place)
+      }
     })
 
     paths.forEach(([fromId, toId]) => {

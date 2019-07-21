@@ -3,6 +3,7 @@ import './App.css'
 import { Island, CurrentIsland } from './Island'
 import ScattershellLocations from './Locations'
 import ScattershellMap from './Map'
+import { ResourceTypes, FoodPerResources, WoodPerResources } from './Resources'
 
 const json = _ => JSON.stringify(_, undefined, 4)
 
@@ -25,33 +26,139 @@ const json = _ => JSON.stringify(_, undefined, 4)
  - initialise with number of people (outrigger, small fleet or large fleet)
  */
 
+const initialIslandState = {
+  population: 0,
+  hasTemple: false,
+  isDiscovered: false,
+  boonsAndBurdens: [],
+  numDwellings: 0,
+  numTreasures: 0
+}
+
 function App() {
   let interval = null
 
+  /* resources */
   const [wind, setWind] = useState(0)
+  const [wood, setWood] = useState(0)
+  const [food, setFood] = useState(0)
+  const [energy, setEnergy] = useState(0)
+  const [count10, setCount10] = useState(0)
   const [progressItems, setProgressItems] = useState([])
+  const [islandStates, setIslandStates] = useState(
+    Object.keys(ScattershellLocations).reduce(
+      (obj, key) => ({ ...obj, [key]: initialIslandState }),
+      {}
+    ) // { islandname: state }
+  )
+  const [currentIsland, setCurrentIsland] = useState('The Morrigan')
+  // the island that is currently being viewed.
+
+  const getDiscoveredIslands = () =>
+    Object.entries(islandStates).filter(
+      ([name, islandState]) => islandState.isDiscovered
+    )
+
+  const islandsWithStates = Object.keys(ScattershellLocations).reduce(
+    (obj, key) => ({
+      ...obj,
+      [key]: { ...ScattershellLocations[key], ...islandStates[key] }
+    }),
+    {}
+  )
+
+  // discover the starting island
+  useEffect(() => {
+    setIslandStates({
+      ...islandStates,
+      'The Morrigan': { ...islandStates['The Morrigan'], isDiscovered: true }
+    })
+  }, [])
+
+  const addPerson = islandName => {
+    setIslandStates({
+      ...islandStates,
+      [islandName]: {
+        ...islandStates[islandName],
+        population: islandStates[islandName].population + 1
+      }
+    })
+    spendFood(50)
+  }
+
+  const addDwelling = islandName => {
+    setIslandStates({
+      ...islandStates,
+      [islandName]: {
+        ...islandStates[islandName],
+        numDwellings: islandStates[islandName].numDwellings + 1
+      }
+    })
+    spendWood(100)
+  }
+
+  const spendFood = amount => {
+    setFood(food - amount)
+  }
+
+  const spendWood = amount => {
+    setWood(food - amount)
+  }
+
+  const calculateFoodPerTick = ({ resources }) =>
+    resources.reduce((total, resource) => total + FoodPerResources[resource], 0)
+
+  const calculateWoodPerTick = ({ resources }) =>
+    resources.reduce((total, resource) => total + WoodPerResources[resource], 0)
 
   const gameTick = () => {
-    // TODO increase food and wood each tick, randomly vary wind
+    // for each discovered island, add wood and food.
+    if (count10 === 4 || count10 === 9) {
+      getDiscoveredIslands().forEach(([name, island]) => {
+        setFood(food + calculateFoodPerTick(islandsWithStates[name]))
+        setWood(wood + calculateWoodPerTick(islandsWithStates[name]))
+      })
+
+      // always +1 energy
+      setEnergy(energy + 1)
+
+      // wind tends positive?
+      let windDiff = Math.floor(Math.random() * 21) - 10
+      let newWind = wind + windDiff
+      setWind(newWind < 0 ? 0 : newWind >= 100 ? 100 : newWind)
+    }
+
+    // faster for upgraded islands
+    if (count10 % 3 === 0) {
+      getDiscoveredIslands()
+        .filter(([name, islandState]) => islandState.isFoodBoosted)
+        .forEach(() => {
+          setFood(food + 1)
+        })
+    }
 
     // if progressItems have reached their duration, trigger them
     let ready = progressItems.filter(x => x.progress >= x.duration)
     Array.prototype.forEach(item => {
       item.action()
     }, ready)
-    // TODO remove those progressItems
 
     // update the state of any progressItems
+    // only put back the ones that are not ready
+    let notReady = progressItems.filter(x => x.progress < x.duration)
     setProgressItems(
-      progressItems.map(item => ({
+      notReady.map(item => ({
         ...item,
         progress: (item.progress += 1)
       }))
     )
+
+    // keep count
+    setCount10(count10 >= 9 ? 0 : count10 + 1)
   }
 
   useEffect(() => {
-    interval = setInterval(gameTick, 500)
+    interval = setInterval(gameTick, 250)
 
     return () => {
       clearInterval(interval)
@@ -62,20 +169,22 @@ function App() {
     Object.keys(ScattershellLocations)
   )
 
-  /*
-  const [resources, setResources] = useState(
-    Object.keys(Resources).reduce((obj, key) => ({ ...obj, [key]: 0 }), {})
-  )
-
-  function spendResource(resourceName, amount) {
-    setResources({
-      ...resources,
-      [resourceName]: resources[resourceName] - amount
-    })
-  }*/
-
   function launchExpedition(source, destName, type) {
-    // TODO type of expedition, spend resources
+    if (type === 'outRigger') {
+      spendWood(25)
+      spendFood(50)
+    }
+
+    if (type === 'smallFleet') {
+      spendWood(50)
+      spendFood(250)
+    }
+
+    if (type === 'largeFleet') {
+      spendWood(100)
+      spendFood(500)
+    }
+
     let duration = source.neighbourDistance[destName] * 100 // number of game ticks
     let name = `Expedition from ${source.name} to ${destName}`
     let action = () => {
@@ -84,46 +193,65 @@ function App() {
     }
     let progress = 0
     setProgressItems([...progressItems, { duration, name, action }])
+
     // need useEffect to periodically go through each progressItem
   }
 
   return (
     <main className={'game'}>
+      {/*<pre>{json(islandStates)}</pre>
+      <pre>{slow10}</pre>*/}
       <aside className={'left'}>
         <h2 className={'title title-subtitle'}>sailsongs of</h2>
         <h1 className={'title title-title'}>scattershell</h1>
-
-        <section>
+        <div>version 0.3</div>
+        {/*<pre>{json(progressItems)}</pre>*/}
+        {/*<section>
           <ul style={{ padding: '0px' }}>
             <li>
-              <a href=';'>new game</a>
+              <a href='javascript:;'>new game</a>
             </li>
             <li>
-              <a href=';'>save game</a>
+              <a href='javascript:;'>save game</a>
             </li>
           </ul>
         </section>
+        */}
+
+        <div className={'game-meters'}>
+          <section>
+            <h3>energy</h3>
+            <h4 className={'energy-meter'}>{energy}</h4>
+          </section>
+
+          <section>
+            <h3>total resources</h3>
+            <ul>
+              <li>
+                <b>{wood}</b> materials
+              </li>
+              <li>
+                <b>{food}</b> food
+              </li>
+              <li>
+                <b>{wind}</b> wind
+              </li>
+            </ul>
+          </section>
+        </div>
 
         <section>
-          <ScattershellMap />
-        </section>
-
-        <section>
-          <h3>energy</h3>
-          <h4>{}</h4>
-        </section>
-
-        <section>
-          <h3>total resources</h3>
-          <ul>
-            <li>wood</li>
-            <li>food</li>
-          </ul>
+          <ScattershellMap
+            places={islandsWithStates}
+            currentIsland={currentIsland}
+            setCurrentIsland={setCurrentIsland}
+          />
         </section>
 
         <section>
           <h3>total scores</h3>
           <ul>
+            <li>islands discovered</li>
             <li>population</li>
             <li>dwellings</li>
             <li>treasures</li>
@@ -133,37 +261,20 @@ function App() {
       </aside>
 
       <section className={'right'}>
+        <br />
         <Island />
         <br />
-        <CurrentIsland launchExpedition={launchExpedition} />
+        <CurrentIsland
+          {...islandsWithStates[currentIsland]}
+          launchExpedition={launchExpedition}
+          addPerson={addPerson}
+          addDwelling={addDwelling}
+          food={food}
+          wood={wood}
+        />
       </section>
     </main>
   )
 }
-
-const ResourceTypes = {
-  Shellfish: 'shellfish',
-  Fish: 'ocean fish',
-  Pigs: 'pigs',
-  Birds: 'birds',
-  BushFood: 'bush food',
-  Coconuts: 'coconuts',
-  RootVegetables: 'root vegetables',
-  PreciousShells: 'precious shells',
-  FreshWater: 'fresh water',
-  Flax: 'flax',
-  Bamboo: 'bamboo',
-  SturdyWood: 'sturdy wood'
-}
-
-const Resources = {
-  Wood: 'wood',
-  Food: 'food'
-}
-// TODO
-
-const ResourceTypeMultipliers = {}
-const Boons = {}
-const Burdens = {}
 
 export default App
