@@ -8,7 +8,7 @@ a {
 }
 
 main {
-  margin: 1em;
+  margin: 0px;
   color: var(--light-color);
   font-family: 'Open Sans', sans-serif;
 }
@@ -19,9 +19,10 @@ main {
   letter-spacing: .04em;
   font-family: 'Londrina Solid', cursive;
   font-size: 6em;
-  margin: 0; 
-  padding: 0;
+  margin: 0px; 
+  padding: 0px;
 }
+
 .title-subtitle {
   
 }
@@ -29,26 +30,33 @@ main {
 }
 
 .game {
-  display: flex;
 }
 
 .left {
-  flex: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: fixed;
+  height: 100%;
+  margin-left: 16px;
+  padding: 0px 16px;
 }
 
 .right {
-  flex: 1;
   margin: 0em 1em;
+  margin-left: 560px;
+  padding-left: 2em;
 }
+
 h1,h2,h3,h4 {
   margin: 0px;
 }
 ul {
   padding: 0px;
+  margin: 0px;
 }
 
 ul li {
-  margin-bottom: .4em;
+  margin-bottom: .6em;
   list-style-type: none;
 }
 
@@ -69,19 +77,20 @@ ul li {
 }
 
 .island-options-details {
-  font-style: italic;
   margin-top: 1em;
 }
 
 .map-svg {
-  min-width: 600px;
+  min-width: 510px;
   height: 500px;
-  background-color: #5ba9ff;
+/*  background-color: #5ba9ff;
+  
   border: 1px solid var(--outline-color);
+  */
 }
 
 .current-island {
-  max-width: 80%;
+  max-width: 800px;
 }
 
 .current-island section {
@@ -89,6 +98,7 @@ ul li {
   color: var(--outline-color);
   padding: 1.4em;
 }
+
 .current-island a {
   text-decoration: none;
   font-weight: bold;
@@ -115,11 +125,11 @@ ul li {
 .current-island-illustration img {
   display: block;
   width: 100%;
-  margin: 0 -16%;
+  margin: 0px -16%;
 }
 
 .current-island-info {
-  flex: 1;
+  flex: 2;
 }
 
 .current-island-options {
@@ -131,22 +141,19 @@ ul li {
   padding: 1.4em;
 }
 
-.energy-meter {
-  font-size: 2em;
-}
-
-aside section {
-  margin: 2em 0em;
-}
-
 .title-subtitle {
   margin-top: 0.4em;
 }
 
-.game-meters {
-  display: flex;
+.game-meters-container {
+/*  font-size: 1.2em;*/
 }
 
-.game-meters section {
-  flex: 1;
+.game-meter-number {
+  font-size: 3em;
+}
+
+.game-meters li {
+  display: inline-block; 
+  margin-right: 2em;
 }

@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useRef, useEffect } from 'react'
 import './App.css'
 import * as SVG from 'svg.js'
 import rough from 'roughjs/dist/rough.umd'
-import Colors from './Theme'
-import { IslandTypes } from './Island'
-import { link } from 'fs';
-import { throwStatement, whileStatement } from '@babel/types';
+import { Colors } from './Theme'
+import { IslandTypes } from './IslandProperties'
 
 const defaultScattershellMapProps = {
   places: [
@@ -25,19 +23,25 @@ const defaultScattershellMapProps = {
 
   paths: [],
   baseMarkerOptions: {
-    stroke: Colors.Outline,
-    fill: Colors.Outline, //Colors.Outline,
+    //stroke: Colors.Outline,
+    fill: Colors.Green, //Colors.Outline,
+    fillStyle: 'solid',
     hachureAngle: 65,
-    roughness: 1.5
+    roughness: 2,
+    stroke: 0,
+    fillWeight: 2,
+    bowing: 2
   },
 
   activePlaceOptions: {
-    fill: Colors.Outline,
-    stroke: Colors.Outline
+    fill: Colors.Green,
+    stroke: Colors.Light,
+    strokeWidth: 5
   },
 
   inactivePlaceOptions: {},
   pathOptions: {},
+
   sizes: {
     [IslandTypes.Rocks]: 5,
     [IslandTypes.Guano]: 10,
@@ -48,40 +52,40 @@ const defaultScattershellMapProps = {
 }
 
 function ScattershellMap(props) {
+  const {
+    places,
+    paths,
+    baseMarkerOptions,
+    activePlaceOptions,
+    inactivePlaceOptions,
+    lineOptions,
+    sizes,
+    currentIsland // string
+  } = {
+    ...defaultScattershellMapProps,
+    ...props
+  }
+
+  const xOffset = -40,
+    yOffset = 0
+
+  const _places = places
+  const opts = baseMarkerOptions
+
+  const righties = ['The Pip', 'Elder', 'Father']
+
   const svgRef = useRef(null)
 
   function renderMap(svg) {
     const rc = rough.svg(svg)
     const draw = SVG(svg) //svg.js draw
 
-   /* draw.click(event => {
+    /* draw.click(event => {
       let x = event.clientX - draw.parent.offsetLeft,
         y = event.clientY - draw.parent.offsetTop
       
         console.log(x,y)
     })*/
-
-    const {
-      places,
-      paths,
-      baseMarkerOptions,
-      activePlaceOptions,
-      inactivePlaceOptions,
-      lineOptions,
-      sizes,
-      currentIsland // string
-    } = {
-      ...defaultScattershellMapProps,
-      ...props
-    }
-
-    const xOffset = -25,
-      yOffset = -20
-
-    const _places = places
-    const opts = baseMarkerOptions
-
-    const righties = ['The Pip', 'Elder Island']
 
     const placeMarker = ({ name, x, y, type, markerOptions }) => {
       let circleOpts = {
@@ -107,14 +111,27 @@ function ScattershellMap(props) {
       draw
         .link('javascript:;')
         .text(place.name)
-        .fill(Colors.Outline)
-        .x(place.x * 5 + xOffset + (righties.indexOf(place.name) !== -1 ? 45 : 0))
-        .y(place.y * 5 + yOffset + (righties.indexOf(place.name) !== -1 ? -8 : sizes[place.type] / 2)) //(place.isBig ? 30 : 20))
+        .fill(Colors.Light)
+        .x(
+          place.x * 5 +
+            xOffset +
+            (righties.indexOf(place.name) !== -1 ? +25 + sizes[place.type] : 0)
+        )
+        .y(
+          place.y * 5 +
+            yOffset +
+            (righties.indexOf(place.name) !== -1
+              ? -8
+              : sizes[place.type] / 2 + 1)
+        ) //(place.isBig ? 30 : 20))
         .font({
-          size: 14,
+          family: 'Open Sans',
+          size: 16,
           anchor: 'middle'
         })
-        .on('click', ()=>{props.setCurrentIsland(place.name)})
+        .on('click', () => {
+          props.setCurrentIsland(place.name)
+        })
     }
 
     Object.values(_places).forEach(place => {
@@ -131,11 +148,32 @@ function ScattershellMap(props) {
     })
   }
 
+  // Render initial
   useEffect(() => {
     let svg = svgRef.current
     renderMap(svg)
+    console.log('rendered initial map')
   }, [svgRef.current])
+
+  // Re-render when islands are discovered or current island changes
+  const discoveries =
+    Object.entries(places).map(([name,place])=>(place.isDiscovered))
+    
+  const reRender = () => {
+    let svg = svgRef.current
+    if (svg) {
+      console.log('re-rendering the map')
+      while (svg.lastChild) {
+        svg.removeChild(svg.lastChild)
+      }
+      renderMap(svg)
+    }
+  }
+
+  useEffect(reRender, discoveries)
+  useEffect(reRender, [currentIsland])
 
   return <svg ref={svgRef} className={'map-svg'} />
 }
+
 export default ScattershellMap

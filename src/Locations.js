@@ -1,4 +1,4 @@
-import { IslandTypes } from './Island'
+import { IslandTypes } from './IslandProperties'
 import { ResourceTypes } from './Resources';
 
 const paths = [
@@ -32,10 +32,10 @@ const paths = [
   ['Shell Cove', 'Gull\'s Rest', 22],
   ['Mother', 'Shell Cove', 28],
   ['Shell Cove', 'Mother', 28],
-  ['Elder Island', 'Shell Cove', 30],
-  ['Shell Cove', 'Elder Island', 30],
-  ['Younger Island', 'Mother', 15],
-  ['Mother', 'Younger Island', 15],
+  ['Elder', 'Shell Cove', 30],
+  ['Shell Cove', 'Elder', 30],
+  ['Younger', 'Mother', 15],
+  ['Mother', 'Younger', 15],
   ['Father', 'Mother', 10],
   ['Mother', 'Father', 10],
   ['Twinstone', 'Mother', 11],
@@ -71,8 +71,17 @@ const loc = (name, type, x, y, resources) => ({
 })
 
 const ScattershellLocations = {
-  'Shell Cove': loc('Shell Cove', IslandTypes.Small, 63, 49, []),
-  'Great Arc': loc('Great Arc', IslandTypes.Large, 56, 58, []),
+  'Shell Cove': loc('Shell Cove', IslandTypes.Small, 63, 49, [
+    'PreciousShells',
+    'Fish'
+  ]),
+  'Great Arc': loc('Great Arc', IslandTypes.Large, 56, 58, [
+    'Flax',
+    'Bamboo',
+    'BushFood',
+    'RootVegetables',
+    'SturdyWood'
+  ]),
   'Morrigan': loc('Morrigan', IslandTypes.Medium, 46, 75, [
     'Fish',
     'RootVegetables',
@@ -85,8 +94,8 @@ const ScattershellLocations = {
     'PreciousShells'
   ]),
   Fivestone: loc('Fivestone', IslandTypes.Rocks, 23, 93, []),
-  'Elder Island': loc('Elder Island', IslandTypes.Rocks, 87, 55, []),
-  'Younger Island': loc('Younger Island', IslandTypes.Guano, 95, 48, [
+  'Elder': loc('Elder', IslandTypes.Rocks, 87, 55, []),
+  'Younger': loc('Younger', IslandTypes.Guano, 95, 48, [
     'Guano',
     'Birds'
   ]),
@@ -108,10 +117,10 @@ const ScattershellLocations = {
     'Shellfish',
     'Fish',
     'Birds',
-    'StudyWood',
+    'SturdyWood',
     'FreshWater'
   ]),
-  'Island of Pearls': loc('Island of Pearls', IslandTypes.Small, 98, 16, [
+  'Island of Pearls': loc('Island of Pearls', IslandTypes.Small, 98, 18, [
     'PreciousShells',
     'Shellfish',
     'Coconuts'

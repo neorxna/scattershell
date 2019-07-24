@@ -9,6 +9,15 @@
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
     <title>Sailsongs of Scattershell</title>
+
+    <script type="text/javascript">
+      /* Disables Fabric UI's fetching of MS Fabric font assets. 
+         Mitigates undesired contact with MSFT legal dept. */ 
+      window.FabricConfig = {
+        fontBaseUrl: ''
+      };
+    </script>    
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

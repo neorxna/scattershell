@@ -1,42 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React from 'react'
 import './App.css'
 import { ResourceTypes, FoodPerResources, WoodPerResources } from './Resources'
-
-const IslandTypes = {
-  Rocks: 'rocky',
-  Guano: 'guano',
-  Small: 'small',
-  Medium: 'medium',
-  Large: 'large'
-}
-
-const IslandDescriptions = {
-  [IslandTypes.Rocks]:
-    'You are disappointed to find an inhospitable outcrop of rocks in the middle of the ocean.',
-  [IslandTypes.Guano]:
-    'This place is covered in guano, hospitable only to the many gulls that dwell here.',
-  [IslandTypes.Small]: 'You look out upon a modest but hospitable island.',
-  [IslandTypes.Medium]:
-    'You are relieved to find a plentiful and hospitable island.',
-  [IslandTypes.Large]:
-    'You are glad to the gods to find a massive volcanic island, capable of sustaining a large population.'
-}
-
-const IslandIllustrations = {
-  [IslandTypes.Rocks]: '/island_types/rock.png',
-  [IslandTypes.Guano]: '/island_types/gull3.png',
-  [IslandTypes.Small]: '/island_types/shells.png',
-  [IslandTypes.Medium]: '/island_types/coconuts.png',
-  [IslandTypes.Large]: '/island_types/volcano.png'
-}
-
-const IslandMaxPopulations = {
-  [IslandTypes.Rocks]: 0,
-  [IslandTypes.Guano]: 25,
-  [IslandTypes.Small]: 100,
-  [IslandTypes.Medium]: 500,
-  [IslandTypes.Large]: 1000
-}
+import { Colors } from './Theme'
+import {
+  IslandTypes,
+  IslandMaxPopulations,
+  IslandDescriptions,
+  IslandIllustrations
+} from './IslandProperties'
+import { developmentLevelForIsland, Actions } from './Game'
+import { Link } from 'office-ui-fabric-react'
 
 const defaultIslandProps = {
   id: '1',
@@ -59,96 +32,87 @@ const defaultIslandProps = {
   hasTemple: false
 }
 
-const DevelopmentLevel = {
-  Undeveloped: 'undeveloped',
-  Burgeoning: 'burgeoning',
-  Developed: 'developed',
-  HighlyDeveloped: 'highly developed',
-  Advanced: 'advanced'
-}
-
-const developmentLevel = props => {
-  // max population reached and treasures found
-  if (props.numTreasures === 10 && props.hasTemple) {
-    return DevelopmentLevel.Advanced
-  }
-  if (props.hasTemple || props.numTreasures > 5) {
-    return DevelopmentLevel.HighlyDeveloped
-  }
-  // max population reached
-  if (props.population === IslandMaxPopulations[props.type]) {
-    return DevelopmentLevel.Developed
-  }
-  //max population not yet reached
-  if (props.population > 5) {
-    return DevelopmentLevel.Burgeoning
-  }
-  return DevelopmentLevel.Undeveloped
-}
-
-const canAddPerson = island =>
-  island.population > IslandMaxPopulations[island.type]
-const canAddDwelling = island => false
-
-function CurrentIsland(_props) {
-  const props = {
+function CurrentIsland(props) {
+  const {
+    island,
+    islands,
+    launchExpedition,
+    wood,
+    food,
+    energy,
+    wind,
+    addDwelling,
+    addPerson,
+    progressItems
+  } = {
     ...defaultIslandProps,
-    ..._props
+    ...props
   }
-  const expeditionChoices = () => (
-    <ul>
-      {props.neighbours
-        .filter(neighbour => !neighbour.discovered)
-        .map(neighbour => (
-          <li>
-            Launch expedition to <b>{neighbour}</b> -
-            <i> {props.neighbourDistance[neighbour]} km away</i>
-            <br />
-            <br />
-            <ul>
-              <li>
-                <a
-                  href={'javascript:;'}
-                  onClick={() =>
-                    props.launchExpedition(props, neighbour, 'outrigger')
-                  }
-                >
-                  Launch outrigger
-                </a>{' '}
-                (costs 25 resources, 50 food, risks 2 people)
-              </li>
-              <li>
-                <a
-                  href={'javascript:;'}
-                  onClick={() =>
-                    props.launchExpedition(props.name, neighbour, 'smallFleet')
-                  }
-                >
-                  Launch small fleet
-                </a>{' '}
-                (costs 50 resources, 250 food, risks 5 people)
-              </li>
-              <li>
-                <a
-                  href={'javascript:;'}
-                  onClick={() =>
-                    props.launchExpedition(props.name, neighbour, 'largeFleet')
-                  }
-                >
-                  Launch large fleet
-                </a>{' '}
-                (costs 100 resources, 500 food, risks 10 people)
-              </li>
-            </ul>
-          </li>
-        ))}
-    </ul>
+
+  const undiscoveredNeighbours = island.neighbours.filter(
+    neighbourName =>
+      !islands[neighbourName].isDiscovered &&
+      progressItems.filter(
+        progressItem => progressItem.destName === neighbourName
+      ).length === 0
   )
 
-  const island = props
+  const expeditionChoices = () => (
+    <ul>
+      {undiscoveredNeighbours.map((neighbour, n) => (
+        <li
+          key={`${neighbour}`}
+          style={{
+            marginBottom: '1em',
+            paddingTop: '1em',
+            ...(n > 0 ? { borderTop: `1px solid ${Colors.Outline}` } : {})
+          }}
+        >
+          Launch expedition to <b>{neighbour}</b> -
+          <i> {island.neighbourDistance[neighbour]} km away</i>
+          <br />
+          <br />
+          <ul>
+            <li>
+              <Link
+                onClick={() =>
+                  launchExpedition(island, neighbour, Actions.LaunchOutrigger)
+                }
+              >
+                Launch outrigger
+              </Link>{' '}
+              costs 25 materials, 50 food, 10 energy.
+            </li>
+            <li>
+              <Link
+              disabled
+                onClick={() =>
+                  launchExpedition(island, neighbour, Actions.LaunchSmallFleet)
+                }
+              >
+                Launch small fleet
+              </Link>{' '}
+              costs 50 materials, 250 food, 10 energy. risks 5 people
+            </li>
+            <li>
+              <Link
+              disabled
+                onClick={() =>
+                  launchExpedition(island, neighbour, Actions.LaunchLargeFleet)
+                }
+              >
+                Launch large fleet
+              </Link>{' '}
+              costs 100 materials, 500 food, 10 energy. risks 10 people
+            </li>
+          </ul>
+        </li>
+      ))}
+    </ul>
+  )
   const canAddPerson =
-    island.population < IslandMaxPopulations[island.type] && props.food >= 50
-  const canAddDwelling = island.numDwellings < 5 && props.wood >= 100
+    island.population < IslandMaxPopulations[island.type] && food >= 50
+  const canAddDwelling = island.numDwellings < 5 && wood >= 100
 
   const islandOptions = () => (
     <ul className={'island-options measure'}>
@@ -161,46 +125,50 @@ function CurrentIsland(_props) {
         </div>
       </li>*/}
       <li>
-        <a
-          href='javascript:;'
+        <Link
           onClick={() => {
-            if (canAddPerson) props.addPerson(island.name)
+            addPerson(island.name)
           }}
           disabled={!canAddPerson}
           className={'island-options-link'}
         >
           👶 add person
-        </a>
+        </Link>
         <div className={'island-options-details'}>
-          Add a person to this island's population. Costs <b>50 food</b>{' '}
-          {!props.food >= 50 && '(not enough)'}
+          <p>
+            Add a person to this island's population. Costs <b>50 food</b>.
+          </p>
+          {!canAddPerson && food < 50 ? '🙅‍♀️ not enough food' : ''}
+          {!canAddPerson && food >= 50 ? '🙅‍♀️ max population reached' : ''}
         </div>
       </li>
       <li>
-        <a
-          href='javascript:;'
+        <Link
           onClick={() => {
-            if (canAddDwelling) props.addDwelling(island.name)
+            addDwelling(island.name)
           }}
+          disabled={!canAddDwelling}
           className={'island-options-link'}
         >
           🏠 build dwelling
-        </a>
+        </Link>
         <div className={'island-options-details'}>
-          Build a dwelling to house more people on this island. Up to five
-          dwellings can be built on this island.
-          <br />
-          Costs <b>100 materials</b> {!props.wood >= 100 && '(not enough)'}
+          <p>
+            Build a dwelling to house more people on this island. Up to five
+            dwellings can be built on this island. Costs <b>100 materials</b>.
+          </p>
+          {!canAddDwelling && wood < 100 ? '🙅‍♀️ not enough materials' : ''}
+          {!canAddDwelling && wood >= 100 ? '🙅‍♀️ max reached' : ''}
         </div>
       </li>
       <li>
-        <a href=';' className={'island-options-link'}>
+        <Link disabled className={'island-options-link'}>
           🙏 build temple
-        </a>
+        </Link>
         <div className={'island-options-details'}>
           <p>
             Build a temple to find treasures to increase the prestige of the
-            island. Can only be built on a medium or larger island.
+            island. Costs <b>1000 food</b> and <b>1000 energy</b>.
           </p>
           <p>
             Building a temple will bring forth a boon or burden for this island
@@ -211,11 +179,70 @@ function CurrentIsland(_props) {
     </ul>
   )
 
-  const [showingExpeditionChoices, setShowingExpeditionChoices] = useState(
-    false
+  const islandInfo = (
+    <section className={'current-island-info'}>
+      <h3>{island.name}</h3>A <b>{island.type} island</b>
+      <p>
+        <i>{IslandDescriptions[island.type]}</i>
+      </p>
+      <ul>
+        <li>
+          Development level: <b>{developmentLevelForIsland(island)}</b>
+        </li>
+        <li>
+          Population: <b>{island.population}</b>/
+          {IslandMaxPopulations[island.type]}
+        </li>
+        <li>
+          Treasures: <b>{island.numTreasures}</b>/10
+        </li>
+        <li>
+          Dwellings: <b>{island.numDwellings}</b>/5
+        </li>
+        <li>
+          Has temple: <b>{island.hasTemple ? 'yes' : 'no'}</b>
+        </li>
+      </ul>
+    </section>
   )
 
-  const json = _ => JSON.stringify(_, undefined, 4)
+  const islandResources = (
+    <section>
+      <h3>Resources on this island</h3>
+      <br /> {island.resources.length === 0 ? 'Nothing of use.' : ''}
+      <ul>
+        {island.resources.map(res => {
+          return (
+            <li key={`${island.name}_${res}`}>
+              <b>{res}</b>
+              <br />
+              <i>
+                ({FoodPerResources[res]} food, {WoodPerResources[res]} materials
+                per tick)
+              </i>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+
+  const unexploredIslands = (
+    <section className={'current-island-expeditions mv2'}>
+      <h4>Unexplored Islands</h4>
+      {undiscoveredNeighbours.length === 0 ? (
+        <i>There are no other islands nearby to discover.</i>
+      ) : (
+        <>
+          <i>
+            The wind and sea whisper rumors of nearby islands waiting to be
+            discovered.
+          </i>
+          {expeditionChoices()}
+        </>
+      )}
+    </section>
+  )
 
   return (
     <div className={'current-island mv2'}>
@@ -225,89 +252,15 @@ function CurrentIsland(_props) {
             <img src={IslandIllustrations[island.type]} />
           </figure>
         </aside>
-        <section className={'current-island-info measure'}>
-          <h3>{island.name}</h3>A <b>{island.type} island</b>
-          <p>
-            <i>{IslandDescriptions[island.type]}</i>
-          </p>
-          <ul>
-            <li>
-              Development level: <b>{developmentLevel(island)}</b>
-            </li>
-            <li>
-              Population: <b>{island.population}</b>/
-              {IslandMaxPopulations[island.type]}
-            </li>
-            <li>
-              Treasures: <b>{island.numTreasures}</b>/10
-            </li>
-            <li>
-              Dwellings: <b>{island.numDwellings}</b>/5
-            </li>
-            <li>
-              Has temple: <b>{island.hasTemple ? 'yes' : 'no'}</b>
-            </li>
-          </ul>
-        </section>
+        {islandInfo}
       </div>
-      <section>
-        <h3>Resources on this island:</h3>
-        <ul>
-          {island.resources.map(res => {
-            return (
-              <li>
-                <b>{res}</b>
-                <br />
-                <i>
-                  ({FoodPerResources[res]} food, {WoodPerResources[res]}{' '}
-                  materials per tick)
-                </i>
-              </li>
-            )
-          })}
-        </ul>
-      </section>
+      {islandResources}
       <section className={'current-island-options mv2'}>
         {islandOptions()}
       </section>
-      <section className={'current-island-expeditions mv2'}>
-        <h4>Unexplored Islands</h4>
-
-        {props.neighbours.length === 0 ? (
-          <i>There are no islands nearby to explore.</i>
-        ) : (
-          <>
-            <i>
-              The wind and sea whisper rumors of nearby islands waiting to be
-              discovered.
-            </i>
-            {!showingExpeditionChoices ? (
-              <>
-                <br />
-                <a
-                  href={'javascript:;'}
-                  onClick={() => setShowingExpeditionChoices(true)}
-                >
-                  Show expedition choices
-                </a>
-              </>
-            ) : (
-              expeditionChoices()
-            )}
-          </>
-        )}
-      </section>
+      {unexploredIslands}
     </div>
   )
-}
-
-function Island(_props) {
-  const props = {
-    ...defaultIslandProps,
-    ..._props
-  }
-
-  return <></>
 }
 
 const defaultTreasureProps = {}
@@ -322,4 +275,4 @@ function Treasure(_props) {
   return <a>Harvest the rewards of treasure</a>
 }
 
-export { Island, CurrentIsland, IslandTypes }
+export { CurrentIsland }

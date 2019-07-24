@@ -1,11 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { Fabric, registerIcons, loadTheme } from 'office-ui-fabric-react'
+
 import './App.css'
-import { Island, CurrentIsland } from './Island'
+import { CurrentIsland } from './Island'
 import ScattershellLocations from './Locations'
 import ScattershellMap from './Map'
+import { fabricIcons, fabricTheme } from './Theme'
 import { ResourceTypes, FoodPerResources, WoodPerResources } from './Resources'
+import { Actions, ActionCosts, initialIslandState } from './Game'
 
 const json = _ => JSON.stringify(_, undefined, 4)
+
+registerIcons(fabricIcons)
+loadTheme(fabricTheme)
 
 /* island state:
  - population ( adds in exchange for food, up to numDwellings * 5 or population limit)
@@ -26,84 +33,140 @@ const json = _ => JSON.stringify(_, undefined, 4)
  - initialise with number of people (outrigger, small fleet or large fleet)
  */
 
-const initialIslandState = {
-  population: 0,
-  hasTemple: false,
-  isDiscovered: false,
-  boonsAndBurdens: [],
-  numDwellings: 0,
-  numTreasures: 0
+
+const intervalDuration = 500
+
+/* https://overreacted.io/making-setinterval-declarative-with-react-hooks/ */
+function useInterval(callback, delay) {
+  const savedCallback = useRef()
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback
+  }, [callback])
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current()
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay)
+      return () => clearInterval(id)
+    }
+  }, [delay])
 }
 
 function App() {
-  let interval = null
+  const [count, setCount] = useState(0)
 
-  /* resources */
-  const [wind, setWind] = useState(0)
-  const [wood, setWood] = useState(0)
-  const [food, setFood] = useState(0)
-  const [energy, setEnergy] = useState(0)
-  const [count10, setCount10] = useState(0)
   const [progressItems, setProgressItems] = useState([])
-  const [islandStates, setIslandStates] = useState(
-    Object.keys(ScattershellLocations).reduce(
-      (obj, key) => ({ ...obj, [key]: initialIslandState }),
-      {}
-    ) // { islandname: state }
+  const [gameState, setGameState] = useState(
+    {
+      islands: Object.keys(ScattershellLocations).reduce(
+        (obj, key) => ({ ...obj, [key]: initialIslandState }),
+        {}
+      ),
+      /* Store player and islands in the same state to ensure all changes are atomic */
+      player: {
+        wood: 0,
+        food: 0,
+        wind: 0,
+        energy: 0
+      }
+    } // { islandname: islandstate, ... }
   )
+
+  const { wind, wood, food, energy } = gameState.player
+
   const [currentIsland, setCurrentIsland] = useState('Morrigan')
   // the island that is currently being viewed.
 
   const getDiscoveredIslands = () =>
-    Object.entries(islandStates).filter(
+    Object.entries(gameState.islands).filter(
       ([name, islandState]) => islandState.isDiscovered
     )
 
-  const islandsWithStates = Object.keys(ScattershellLocations).reduce(
-    (obj, key) => ({
-      ...obj,
-      [key]: { ...ScattershellLocations[key], ...islandStates[key] }
-    }),
-    {}
-  )
+  const islandsWithStates = () =>
+    Object.keys(ScattershellLocations).reduce(
+      (obj, key) => ({
+        ...obj,
+        [key]: { ...ScattershellLocations[key], ...gameState.islands[key] }
+      }),
+      {}
+    )
 
-  // discover the starting island
   useEffect(() => {
-    setIslandStates({
-      ...islandStates,
-      'Morrigan': { ...islandStates['Morrigan'], isDiscovered: true }
-    })
+    /* Game launch */
+    // discover the starting island
+    setDiscovered('Morrigan')
   }, [])
 
-  const addPerson = islandName => {
-    setIslandStates({
-      ...islandStates,
-      [islandName]: {
-        ...islandStates[islandName],
-        population: islandStates[islandName].population + 1
+  // helper function to update nested state
+  const updateGameState = (
+    resourceChanges,
+    islandName,
+    islandUpdate,
+    willSpend,
+    free
+  ) => {
+    setGameState(previous => {
+      let { woodΔ, foodΔ, energyΔ, windΔ } = resourceChanges
+
+      // for negative Δs, only update if we have enough
+      const check = (x, Δ) => {
+        let bad = x + Δ < 0
+        return bad || Δ == undefined ? x : x + Δ
       }
-    })
-    spendFood(50)
-  }
 
-  const addDwelling = islandName => {
-    setIslandStates({
-      ...islandStates,
-      [islandName]: {
-        ...islandStates[islandName],
-        numDwellings: islandStates[islandName].numDwellings + 1
+      let player = {
+        wood: check(previous.player.wood, woodΔ),
+        food: check(previous.player.food, foodΔ),
+        wind: Math.min(check(previous.player.wind, windΔ), 100), // 100 = max wind
+        energy: check(previous.player.energy, energyΔ)
       }
+
+      let insufficient =
+        (woodΔ && player.wood === previous.player.wood) ||
+        (foodΔ && player.food === previous.player.food) ||
+        (windΔ && player.wind === previous.player.wind) ||
+        (energyΔ && player.energy === previous.player.energy)
+
+      if (!insufficient && willSpend != undefined) willSpend()
+
+      let update = {
+        player: { ...previous.player, ...(player || {}) },
+        islands: {
+          ...previous.islands,
+          ...(islandName && islandUpdate
+            ? {
+                [islandName]: {
+                  ...previous.islands[islandName],
+                  ...islandUpdate
+                }
+              }
+            : {})
+        }
+      }
+
+      // if all required amounts were spent, or the txn is free, apply the update
+      return !insufficient || free ? update : previous
     })
-    spendWood(100)
+  }
+  const setDiscovered = islandName => {
+    console.log(`discovered ${islandName}`)
+    updateGameState({}, islandName, { isDiscovered: true }, null, true)
   }
 
-  const spendFood = amount => {
-    setFood(food - amount)
-  }
+  const addPerson = islandName =>
+    updateGameState({ foodΔ: -50 }, islandName, {
+      population: gameState.islands[islandName].population + 1
+    })
 
-  const spendWood = amount => {
-    setWood(food - amount)
-  }
+  const addDwelling = islandName =>
+    updateGameState({ woodΔ: -100 }, islandName, {
+      numDwellings: gameState.islands[islandName].numDwellings + 1
+    })
 
   const calculateFoodPerTick = ({ resources }) =>
     resources.reduce((total, resource) => total + FoodPerResources[resource], 0)
@@ -112,101 +175,98 @@ function App() {
     resources.reduce((total, resource) => total + WoodPerResources[resource], 0)
 
   const gameTick = () => {
+    let foodΔ = 0,
+      woodΔ = 0,
+      energyΔ = 0,
+      windΔ = 0
+
+    // keep count
+    setCount(count === 9 ? 0 : count + 1)
+
     // for each discovered island, add wood and food.
-    if (count10 === 4 || count10 === 9) {
+    if (count === 4 || count === 9) {
       getDiscoveredIslands().forEach(([name, island]) => {
-        setFood(food + calculateFoodPerTick(islandsWithStates[name]))
-        setWood(wood + calculateWoodPerTick(islandsWithStates[name]))
+        foodΔ += calculateFoodPerTick(ScattershellLocations[name])
+        woodΔ += calculateWoodPerTick(ScattershellLocations[name])
       })
 
       // always +1 energy
-      setEnergy(energy + 1)
+      energyΔ = 1
 
       // wind tends positive?
-      let windDiff = Math.floor(Math.random() * 21) - 10
-      let newWind = wind + windDiff
-      setWind(newWind < 0 ? 0 : newWind >= 100 ? 100 : newWind)
+      windΔ = Math.floor(Math.random() * 21) - 10
     }
-
-    // faster for upgraded islands
-    if (count10 % 3 === 0) {
+    // faster for upgraded islands  TODO
+    /*if (count % 3 === 0) {
       getDiscoveredIslands()
         .filter(([name, islandState]) => islandState.isFoodBoosted)
         .forEach(() => {
           setFood(food + 1)
         })
-    }
+    }*/
 
-    // if progressItems have reached their duration, trigger them
-    let ready = progressItems.filter(x => x.progress >= x.duration)
-    Array.prototype.forEach(item => {
-      item.action()
-    }, ready)
+    // if any progressItems have reached their duration, trigger them
+    progressItems
+      .filter(x => x.progress >= x.duration)
+      .forEach(item => {
+        item.action()
+      })
 
     // update the state of any progressItems
     // only put back the ones that are not ready
     let notReady = progressItems.filter(x => x.progress < x.duration)
     setProgressItems(
-      notReady.map(item => ({
-        ...item,
-        progress: (item.progress += 1)
-      }))
+      notReady.map(item => {
+        return {
+          ...item,
+          progress: item.progress + 1 + 0.05 * wind
+        }
+      })
     )
 
-    // keep count
-    setCount10(count10 >= 9 ? 0 : count10 + 1)
+    updateGameState({
+      woodΔ,
+      foodΔ,
+      energyΔ,
+      windΔ
+    })
   }
 
-  useEffect(() => {
-    interval = setInterval(gameTick, 250)
+  // Set the game loop interval
+  useInterval(gameTick, intervalDuration)
 
-    return () => {
-      clearInterval(interval)
-    }
-  })
-
-  const [discoveredIslands, setDiscoveredIslands] = useState(
-    Object.keys(ScattershellLocations)
-  )
-
-  function launchExpedition(source, destName, type) {
-    if (type === 'outRigger') {
-      spendWood(25)
-      spendFood(50)
-    }
-
-    if (type === 'smallFleet') {
-      spendWood(50)
-      spendFood(250)
-    }
-
-    if (type === 'largeFleet') {
-      spendWood(100)
-      spendFood(500)
-    }
-
-    let duration = source.neighbourDistance[destName] * 100 // number of game ticks
-    let name = `Expedition from ${source.name} to ${destName}`
-    let action = () => {
-      //mark this island as discovered
-      setDiscoveredIslands([...discoveredIslands, destName])
-    }
-    let progress = 0
-    setProgressItems([...progressItems, { duration, name, action }])
-
-    // need useEffect to periodically go through each progressItem
+  function launchExpedition(source, destName, actiontype) {
+    // spend the resources immediately
+    updateGameState(ActionCosts[actiontype], null, null, () => {
+      // if spending was successful, append new task to progressItems
+      setProgressItems([
+        ...progressItems,
+        {
+          duration: source.neighbourDistance[destName] * 10,
+          name: `Expedition from ${
+            source.name
+          } to ${destName} via ${actiontype}`,
+          source,
+          destName,
+          action: () => {
+            //mark this island as discovered
+            setDiscovered(destName)
+          },
+          progress: 0
+        }
+      ])
+    })
   }
 
   return (
-    <main className={'game'}>
-      {/*<pre>{json(islandStates)}</pre>
-      <pre>{slow10}</pre>*/}
-      <aside className={'left'}>
-        <h2 className={'title title-subtitle'}>sailsongs of</h2>
-        <h1 className={'title title-title'}>scattershell</h1>
-        <div>version 0.4</div>
-        {/*<pre>{json(progressItems)}</pre>*/}
-        {/*<section>
+    <Fabric>
+      <main className={'game'}>
+        <aside className={'left'}>
+          <h2 className={'title title-subtitle'}>sailsongs of</h2>
+          <h1 className={'title title-title'}>scattershell</h1>
+          <div>version 0.5</div>
+
+          {/*<section>
           <ul style={{ padding: '0px' }}>
             <li>
               <a href='javascript:;'>new game</a>
@@ -218,37 +278,50 @@ function App() {
         </section>
         */}
 
-        <div className={'game-meters'}>
-          <section>
-            <h3>energy</h3>
-            <h4 className={'energy-meter'}>{energy}</h4>
-          </section>
-
-          <section>
-            <h3>total resources</h3>
-            <ul>
+          <section className={'game-meters-container'}>
+            <ul className={'game-meters'}>
               <li>
-                <b>{wood}</b> materials
+                <h4 className={'game-meter-number'}>{wood}</h4> materials
               </li>
               <li>
-                <b>{food}</b> food
+                <h4 className={'game-meter-number'}>{food}</h4> food
               </li>
               <li>
-                <b>{wind}</b> wind
+                <h4 className={'game-meter-number'}>{wind}</h4> wind
+              </li>
+              <li>
+                <h4 className={'game-meter-number'}>{energy}</h4> energy
               </li>
             </ul>
           </section>
-        </div>
 
-        <section>
-          <ScattershellMap
-            places={islandsWithStates}
-            currentIsland={currentIsland}
-            setCurrentIsland={setCurrentIsland}
-          />
-        </section>
+          <section className={'journeys-container'}>
+            <h4>In progress</h4>
+            {progressItems.length > 0 ? (
+              <ul>
+                {progressItems.map(item => {
+                  let { name, progress, duration, action, destName } = item
+                  return (
+                    <li key={`journey-${action}-${destName}`}>
+                      {name} ({Math.round(progress / 10)} / {duration / 10})
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              'nothing in progress'
+            )}
+          </section>
 
-        {/*<section>
+          <section>
+            <ScattershellMap
+              places={islandsWithStates()}
+              currentIsland={currentIsland}
+              setCurrentIsland={setCurrentIsland}
+            />
+          </section>
+
+          {/*<section>
           <h3>total scores</h3>
           <ul>
             <li>islands discovered</li>
@@ -258,23 +331,30 @@ function App() {
             <li>temples</li>
           <0/ul>
         </section>*/}
-      </aside>
+        </aside>
 
-      <section className={'right'}>
-        <br />
-        <Island />
-        <br />
-        <CurrentIsland
-          {...islandsWithStates[currentIsland]}
-          launchExpedition={launchExpedition}
-          addPerson={addPerson}
-          addDwelling={addDwelling}
-          food={food}
-          wood={wood}
-        />
-      </section>
-    </main>
+        <section className={'right'}>
+          <CurrentIsland
+            island={islandsWithStates()[currentIsland]}
+            islands={islandsWithStates()}
+            launchExpedition={launchExpedition}
+            addPerson={addPerson}
+            addDwelling={addDwelling}
+            food={food}
+            wind={wind}
+            wood={wood}
+            energy={energy}
+            progressItems={progressItems}
+          />
+        </section>
+      </main>
+    </Fabric>
   )
 }
 
 export default App
+
+/* scatterings
+- slower/faster travel (harness wind)
+- 
+*/
