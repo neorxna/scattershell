@@ -9,6 +9,7 @@ import { fabricIcons, fabricTheme } from './Theme'
 import { ResourceTypes, FoodPerResources, WoodPerResources } from './Resources'
 import { Actions, ActionCosts, initialIslandState } from './Game'
 
+const VERSION='0.5.1'
 const json = _ => JSON.stringify(_, undefined, 4)
 
 registerIcons(fabricIcons)
@@ -263,8 +264,7 @@ function App() {
       <main className={'game'}>
         <aside className={'left'}>
           <h2 className={'title title-subtitle'}>sailsongs of</h2>
-          <h1 className={'title title-title'}>scattershell</h1>
-          <div>version 0.5</div>
+          <h1 className={'title title-title'} title={VERSION}>scattershell</h1>
 
           {/*<section>
           <ul style={{ padding: '0px' }}>

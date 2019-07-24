@@ -36,6 +36,7 @@ main {
   overflow-y: auto;
   overflow-x: hidden;
   position: fixed;
+  max-width: 520px;
   height: 100%;
   margin-left: 16px;
   padding: 0px 16px;
