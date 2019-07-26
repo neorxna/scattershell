@@ -28,10 +28,10 @@ const IslandIllustrations = {
 
 const IslandMaxPopulations = {
   [IslandTypes.Rocks]: 0,
-  [IslandTypes.Guano]: 25,
-  [IslandTypes.Small]: 100,
-  [IslandTypes.Medium]: 500,
-  [IslandTypes.Large]: 1000
+  [IslandTypes.Guano]: 5,
+  [IslandTypes.Small]: 10,
+  [IslandTypes.Medium]: 50,
+  [IslandTypes.Large]: 100
 }
 
 const DevelopmentLevel = {

@@ -15,14 +15,48 @@ const ResourceTypes = {
   Guano: 'guano'
 }
 
+const RequiresGathering = {
+  [ResourceTypes.Shellfish]: false,
+  [ResourceTypes.Fish]: false,
+  [ResourceTypes.Pigs]: false,
+  [ResourceTypes.Birds]: false,
+  [ResourceTypes.BushFood]: false,
+  [ResourceTypes.Coconuts]: true,
+  [ResourceTypes.RootVegetables]: true,
+  [ResourceTypes.PreciousShells]: true,
+  [ResourceTypes.FreshWater]: false,
+  [ResourceTypes.Flax]: false,
+  [ResourceTypes.Bamboo]: false,
+  [ResourceTypes.SturdyWood]: true,
+  [ResourceTypes.FruitTrees]: false,
+  [ResourceTypes.Guano]: false
+}
+
+const IsDispersable = {
+  [ResourceTypes.Shellfish]: false,
+  [ResourceTypes.Fish]: false,
+  [ResourceTypes.Pigs]: true,
+  [ResourceTypes.Birds]: false,
+  [ResourceTypes.BushFood]: false,
+  [ResourceTypes.Coconuts]: true,
+  [ResourceTypes.RootVegetables]: true,
+  [ResourceTypes.PreciousShells]: false,
+  [ResourceTypes.FreshWater]: false,
+  [ResourceTypes.Flax]: false,
+  [ResourceTypes.Bamboo]: false,
+  [ResourceTypes.SturdyWood]: false,
+  [ResourceTypes.FruitTrees]: true,
+  [ResourceTypes.Guano]: false
+}
+
 const FoodPerResources = {
-  [ResourceTypes.Shellfish]: 1,
+  [ResourceTypes.Shellfish]: 2,
   [ResourceTypes.Fish]: 2,
   [ResourceTypes.Pigs]: 1,
   [ResourceTypes.Birds]: 1,
   [ResourceTypes.BushFood]: 2,
-  [ResourceTypes.Coconuts]: 1,
-  [ResourceTypes.RootVegetables]: 2,
+  [ResourceTypes.Coconuts]: 2,
+  [ResourceTypes.RootVegetables]: 1,
   [ResourceTypes.PreciousShells]: 0,
   [ResourceTypes.FreshWater]: 2,
   [ResourceTypes.Flax]: 0,
@@ -38,7 +72,7 @@ const WoodPerResources = {
   [ResourceTypes.Pigs]: 1,
   [ResourceTypes.Birds]: 1,
   [ResourceTypes.BushFood]: 0,
-  [ResourceTypes.Coconuts]: 1,
+  [ResourceTypes.Coconuts]: 2,
   [ResourceTypes.RootVegetables]: 0,
   [ResourceTypes.PreciousShells]: 2,
   [ResourceTypes.FreshWater]: 0,
@@ -57,5 +91,7 @@ export {
   FoodPerResources,
   WoodPerResources,
   Boons,
-  Burdens
+  Burdens,
+  RequiresGathering,
+  IsDispersable
 }

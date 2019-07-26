@@ -5,37 +5,32 @@ import './App.css'
 import { CurrentIsland } from './Island'
 import ScattershellLocations from './Locations'
 import ScattershellMap from './Map'
-import { fabricIcons, fabricTheme } from './Theme'
-import { ResourceTypes, FoodPerResources, WoodPerResources } from './Resources'
-import { Actions, ActionCosts, initialIslandState } from './Game'
+import { fabricIcons, fabricTheme, Colors } from './Theme'
+import {
+  ResourceTypes,
+  RequiresGathering,
+  FoodPerResources,
+  WoodPerResources
+} from './Resources'
+import {
+  Seasons,
+  Actions,
+  ActionCosts,
+  InitialIslandState,
+  InitialPlayerState,
+  InitialWorldState,
+  MaxDwellings
+} from './Game'
+import { IslandTypes, IslandMaxPopulations } from './IslandProperties'
 
-const VERSION='0.5.1'
+const VERSION = '0.6'
+const START_LOCATION = ScattershellLocations.Morrigan.name
+const intervalDuration = 500
+
 const json = _ => JSON.stringify(_, undefined, 4)
 
 registerIcons(fabricIcons)
 loadTheme(fabricTheme)
-
-/* island state:
- - population ( adds in exchange for food, up to numDwellings * 5 or population limit)
- - hasTemple
- - isDiscovered
- - boonsAndBurdens (when island is discovered, it gets initialised with source list)
- - numDwellings ( allows higher population. requires wood)
- - numTreasures ( slowly add over time with temple. gives food and wood bonus when clicked)
-
- global state:
- - wood ( auto increments * multipliers)
- - food (auto increments * multipliers)
- - wind (varies randomly but always > 0)
-
- island disovered: 
- - set isDiscovered=true on dest
- - copy source boonsAndBurdens to dest
- - initialise with number of people (outrigger, small fleet or large fleet)
- */
-
-
-const intervalDuration = 500
 
 /* https://overreacted.io/making-setinterval-declarative-with-react-hooks/ */
 function useInterval(callback, delay) {
@@ -60,33 +55,30 @@ function useInterval(callback, delay) {
 
 function App() {
   const [count, setCount] = useState(0)
+  const [count100, setCount100] = useState(0)
+  const [messages, setMessages] = useState([])
+
+  const [deltas, setDeltas] = useState({
+    woodΔ: 0,
+    foodΔ: 0,
+    energyΔ: 0,
+    windΔ: 0
+  })
 
   const [progressItems, setProgressItems] = useState([])
-  const [gameState, setGameState] = useState(
-    {
-      islands: Object.keys(ScattershellLocations).reduce(
-        (obj, key) => ({ ...obj, [key]: initialIslandState }),
-        {}
-      ),
-      /* Store player and islands in the same state to ensure all changes are atomic */
-      player: {
-        wood: 0,
-        food: 0,
-        wind: 0,
-        energy: 0
-      }
-    } // { islandname: islandstate, ... }
-  )
+  const [gameState, setGameState] = useState({
+    islands: Object.keys(ScattershellLocations).reduce(
+      (obj, key) => ({ ...obj, [key]: InitialIslandState }),
+      {}
+    ),
+    player: InitialPlayerState,
+    world: InitialWorldState
+  })
 
   const { wind, wood, food, energy } = gameState.player
 
-  const [currentIsland, setCurrentIsland] = useState('Morrigan')
   // the island that is currently being viewed.
-
-  const getDiscoveredIslands = () =>
-    Object.entries(gameState.islands).filter(
-      ([name, islandState]) => islandState.isDiscovered
-    )
+  const [currentIsland, setCurrentIsland] = useState(START_LOCATION)
 
   const islandsWithStates = () =>
     Object.keys(ScattershellLocations).reduce(
@@ -100,14 +92,13 @@ function App() {
   useEffect(() => {
     /* Game launch */
     // discover the starting island
-    setDiscovered('Morrigan')
+    launchVoyage('Home', START_LOCATION, Actions.LaunchFleet, true)
   }, [])
 
   // helper function to update nested state
   const updateGameState = (
     resourceChanges,
-    islandName,
-    islandUpdate,
+    islandUpdateFn,
     willSpend,
     free
   ) => {
@@ -133,78 +124,245 @@ function App() {
         (windΔ && player.wind === previous.player.wind) ||
         (energyΔ && player.energy === previous.player.energy)
 
-      if (!insufficient && willSpend != undefined) willSpend()
+      let playerUpdate = { ...previous.player, ...(player || {}) }
+      let abort =
+        islandUpdateFn != undefined &&
+        islandUpdateFn(previous.islands) === false
+
+      let islandsUpdate =
+        islandUpdateFn == undefined
+          ? previous.islands
+          : islandUpdateFn(previous.islands)
+
+      let worldUpdate = previous.world
+
+      if (!insufficient && willSpend != undefined && !abort) willSpend()
 
       let update = {
-        player: { ...previous.player, ...(player || {}) },
-        islands: {
-          ...previous.islands,
-          ...(islandName && islandUpdate
-            ? {
-                [islandName]: {
-                  ...previous.islands[islandName],
-                  ...islandUpdate
-                }
-              }
-            : {})
-        }
+        player: playerUpdate,
+        islands: islandsUpdate,
+        world: worldUpdate
       }
 
       // if all required amounts were spent, or the txn is free, apply the update
-      return !insufficient || free ? update : previous
+      return (!insufficient || free) && !abort ? update : previous
     })
-  }
-  const setDiscovered = islandName => {
-    console.log(`discovered ${islandName}`)
-    updateGameState({}, islandName, { isDiscovered: true }, null, true)
   }
 
-  const addPerson = islandName =>
-    updateGameState({ foodΔ: -50 }, islandName, {
-      population: gameState.islands[islandName].population + 1
-    })
+  const postMessage = msg =>
+    setMessages(previous => [...previous, { live: 10, text: msg }])
+
+  const setDiscovered = voyage => {
+    /*
+    when an island is discovered via voyage, the voyaging people seed the island's population.
+    - unless the destination is a rocky island, in which case the people are lost.
+    - a fleet of people is needed to establish a settlement.
+    - a settlement allows the population to be increased by clicking 'add person'
+    - the safe choice is to launch an outrigger first to scout, then a fleet to populate 
+    
+    */
+    const { fromName, toName, numPeople, actiontype } = voyage
+    const to = ScattershellLocations[toName]
+    const isInhospitable = to.type === IslandTypes.Rocks
+
+    const successMsg = `A ${to.type} island was encountered!`
+    const rocksMsg = `An inhospitable outcrop of rocks was encountered. The ${numPeople} voyagers perished.`
+    const msg = `The ${actiontype} voyage from ${fromName} arrived at ${toName}. ${
+      isInhospitable ? rocksMsg : successMsg
+    }`
+    postMessage(msg)
+
+    updateGameState(
+      {},
+      previousIslands => {
+        let previousTo = previousIslands[toName]
+        let previousFrom = previousIslands[fromName] || { scatterings: [] }
+        return {
+          ...previousIslands,
+          [toName]: {
+            ...previousTo,
+            isDiscovered: true,
+            scatterings: previousFrom.scatterings,
+            population: isInhospitable ? 0 : previousTo.population + numPeople
+          }
+        }
+      },
+      null,
+      true // free
+    )
+  }
+
+  const addPerson = islandName => {
+    updateGameState(
+      { foodΔ: -50 },
+      previousIslands => {
+        const island = previousIslands[islandName]
+        const { population, bonusPopulation, hasSettlement } = island
+        const islandLocation = ScattershellLocations[islandName]
+
+        const maxPopulation = IslandMaxPopulations[islandLocation.type]
+        const totalPopulationLimit = bonusPopulation + maxPopulation
+
+        return population === totalPopulationLimit || !hasSettlement
+          ? false
+          : {
+              ...previousIslands,
+              [islandName]: {
+                ...island,
+                population: population + 1
+              }
+            }
+      },
+      () => {
+        postMessage(`a child was born in ${islandName}!`)
+      }
+    )
+  }
 
   const addDwelling = islandName =>
-    updateGameState({ woodΔ: -100 }, islandName, {
-      numDwellings: gameState.islands[islandName].numDwellings + 1
+    updateGameState(
+      { woodΔ: -100 },
+      previousIslands => {
+        const island = previousIslands[islandName]
+        const { numDwellings, bonusPopulation, hasSettlement } = island
+
+        return numDwellings === MaxDwellings || !hasSettlement
+          ? false
+          : {
+              ...previousIslands,
+              [islandName]: {
+                ...island,
+                numDwellings: numDwellings + 1,
+                bonusPopulation: bonusPopulation + 5
+              }
+            }
+      },
+      () => {
+        postMessage(`a dwelling was built in ${islandName}!`)
+      }
+    )
+
+  const addSettlement = islandName =>
+    updateGameState(
+      { woodΔ: -250 },
+      previousIslands => {
+        const island = previousIslands[islandName]
+        const { population } = island
+        // requires 5 people on the island
+        return population < 5
+          ? false
+          : {
+              ...previousIslands,
+              [islandName]: {
+                ...island,
+                hasSettlement: true
+              }
+            }
+      },
+      () => {
+        postMessage(`a settlement was built in ${islandName}!`)
+      }
+    )
+
+  const spendEnergy = island =>
+    setGameState(previous => {
+      let { resources } = island
+      let { energy, food, wood } = previous.player
+
+      let foodScore = resources.reduce(
+        (sum, resource) => sum + FoodPerResources[resource],
+        0
+      )
+      let woodScore = resources.reduce(
+        (sum, resource) => sum + WoodPerResources[resource],
+        0
+      )
+
+      let player = {
+        ...previous.player,
+        food: food + foodScore * energy,
+        wood: wood + woodScore * energy,
+        energy: 0
+      }
+
+      return {
+        ...previous,
+        player
+      }
     })
 
-  const calculateFoodPerTick = ({ resources }) =>
-    resources.reduce((total, resource) => total + FoodPerResources[resource], 0)
+  const updateWorldState = worldFn =>
+    setGameState(previous => {
+      const { world } = previous
+      return {
+        ...previous,
+        world: worldFn(world)
+      }
+    })
 
-  const calculateWoodPerTick = ({ resources }) =>
-    resources.reduce((total, resource) => total + WoodPerResources[resource], 0)
+  const calculatePerTick = (PerResources, { resources }, hasGatherers) =>
+    resources.reduce(
+      (total, resource) =>
+        total +
+        (!RequiresGathering[resource] ||
+        (RequiresGathering[resource] && hasGatherers)
+          ? PerResources[resource]
+          : 0),
+      0
+    )
 
   const gameTick = () => {
-    let foodΔ = 0,
-      woodΔ = 0,
-      energyΔ = 0,
-      windΔ = 0
+    // The game loop.
 
-    // keep count
-    setCount(count === 9 ? 0 : count + 1)
+    setGameState(previous => {
+      const { player, islands } = previous
+      const { wood, food, energy, wind } = player
 
-    // for each discovered island, add wood and food.
-    if (count === 4 || count === 9) {
-      getDiscoveredIslands().forEach(([name, island]) => {
-        foodΔ += calculateFoodPerTick(ScattershellLocations[name])
-        woodΔ += calculateWoodPerTick(ScattershellLocations[name])
+      let foodΔ = 0,
+        woodΔ = 0,
+        energyΔ = 1,
+        windΔ = Math.floor(Math.random() * 21) - 10
+
+      Object.entries(islands)
+        .filter(([name, island]) => island.isDiscovered)
+        .forEach(([name, island]) => {
+          let islandLocation = ScattershellLocations[name]
+          let hasGatherers = island.population >= 5
+          foodΔ += calculatePerTick(
+            FoodPerResources,
+            islandLocation,
+            hasGatherers
+          )
+          woodΔ += calculatePerTick(
+            WoodPerResources,
+            islandLocation,
+            hasGatherers
+          )
+          foodΔ -= island.population
+        })
+
+      setDeltas({
+        woodΔ,
+        foodΔ,
+        energyΔ,
+        windΔ
       })
 
-      // always +1 energy
-      energyΔ = 1
-
-      // wind tends positive?
-      windΔ = Math.floor(Math.random() * 21) - 10
-    }
-    // faster for upgraded islands  TODO
-    /*if (count % 3 === 0) {
-      getDiscoveredIslands()
-        .filter(([name, islandState]) => islandState.isFoodBoosted)
-        .forEach(() => {
-          setFood(food + 1)
-        })
-    }*/
+      const newWood = wood + woodΔ,
+      newFood = food + foodΔ,
+      newEnergy = energy + energyΔ,
+      newWind = wind + windΔ
+      return {
+        ...previous,
+        player: {
+          ...player,
+          wood: newWood < 0 ? 0 : newWood,
+          food: newFood < 0 ? 0 : newFood,
+          energy: newEnergy < 0 ? 0 : newEnergy,
+          wind: newWind < 0 ? 0 : newWind
+        }
+      }
+    })
 
     // if any progressItems have reached their duration, trigger them
     progressItems
@@ -214,57 +372,182 @@ function App() {
       })
 
     // update the state of any progressItems
-    // only put back the ones that are not ready
-    let notReady = progressItems.filter(x => x.progress < x.duration)
-    setProgressItems(
-      notReady.map(item => {
-        return {
-          ...item,
-          progress: item.progress + 1 + 0.05 * wind
-        }
-      })
+    // only put back the ones that are still not ready
+    setProgressItems(previous =>
+      previous
+        .filter(x => x.progress < x.duration)
+        .map(item => {
+          let progress = item.progress + 1 + 0.05 * wind
+          return {
+            ...item,
+            progress: progress > item.duration ? item.duration : progress
+          }
+        })
     )
 
-    updateGameState({
-      woodΔ,
-      foodΔ,
-      energyΔ,
-      windΔ
+    updateWorldState(previousWorld => {
+      let { day, dayOfWeek, weekOfYear, year } = previousWorld
+      return {
+        day: day + 1,
+        dayOfWeek: dayOfWeek === 7 ? 1 : dayOfWeek + 1, // 1-7
+        weekOfYear:
+          weekOfYear === 52 ? 1 : dayOfWeek === 7 ? weekOfYear + 1 : weekOfYear, // 1-52
+        year: weekOfYear === 52 ? year + 1 : year
+      }
     })
+
+    setMessages(previous =>
+      previous
+        .filter(msg => msg.live > 0)
+        .map(msg => ({ ...msg, live: msg.live - 1 }))
+    )
   }
 
   // Set the game loop interval
   useInterval(gameTick, intervalDuration)
 
-  function launchExpedition(source, destName, actiontype) {
-    // spend the resources immediately
-    updateGameState(ActionCosts[actiontype], null, null, () => {
+  function launchVoyage(fromName, toName, actiontype, isInitial) {
+    const NumVoyagers = {
+      [Actions.LaunchOutrigger]: 2,
+      [Actions.LaunchFleet]: 5
+    }
+
+    const removePopulationFrom = previousIslands => {
+      // remove the population
+      let previousFrom = previousIslands[fromName]
+      let numVoyagers = NumVoyagers[actiontype]
+      let enough = previousFrom.population >= numVoyagers
+
+      // make sure we have enough people on the fromIsland
+      return enough
+        ? {
+            ...previousIslands,
+            [fromName]: {
+              ...previousFrom,
+              population: previousFrom.population - numVoyagers
+            }
+          }
+        : false
+    }
+
+    const addProgressTask = () => {
       // if spending was successful, append new task to progressItems
-      setProgressItems([
-        ...progressItems,
-        {
-          duration: source.neighbourDistance[destName] * 10,
-          name: `Expedition from ${
-            source.name
-          } to ${destName} via ${actiontype}`,
-          source,
-          destName,
-          action: () => {
-            //mark this island as discovered
-            setDiscovered(destName)
-          },
+      setProgressItems(previous => {
+        const voyage = {
+          duration: isInitial
+            ? 10
+            : ScattershellLocations[fromName].neighbourDistance[toName] * 10,
+          isInitial,
+          name: isInitial
+            ? `Voyage to ${toName}`
+            : `Voyage from ${fromName} to ${toName} by ${actiontype}`,
+          fromName,
+          toName,
+          actiontype,
+          numPeople: NumVoyagers[actiontype],
           progress: 0
         }
-      ])
-    })
+
+        const action = () => {
+          //mark this island as discovered
+          setDiscovered(voyage)
+        }
+
+        return [...previous, { ...voyage, action }]
+      })
+    }
+
+    if (isInitial) {
+      addProgressTask()
+    } else {
+      updateGameState(
+        ActionCosts[actiontype],
+        removePopulationFrom,
+        addProgressTask
+      )
+    }
   }
+
+  const { woodΔ, foodΔ, energyΔ, windΔ } = deltas
+  const deltaView = Δ =>
+    Δ === 0 ? null : (
+      <span
+        className={'game-meter-delta'}
+        style={{ color: Δ > 0 ? Colors.Green : 'red' }}
+      >{`${Δ > 0 ? '+' : ''}${Δ}`}</span>
+    )
+  const journeys = (
+    <section className={'journeys-container'}>
+      {progressItems.length > 0 ? (
+        <ul>
+          {progressItems.map(item => {
+            let { name, progress, duration, action, destName } = item
+            return (
+              <li key={`journey-${action}-${destName}`}>
+                ⛵ {name} ({Math.round(progress)} / {duration} progress)
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+    </section>
+  )
+  const gameMeters = (
+    <section className={'game-meters-container'}>
+      <ul className={'game-meters'}>
+        <li>
+          <h4 className={'game-meter-number'}>
+            {wood} {deltaView(woodΔ)}
+          </h4>{' '}
+          materials
+        </li>
+        <li>
+          <h4 className={'game-meter-number'}>
+            {food} {deltaView(foodΔ)}
+          </h4>{' '}
+          food
+        </li>
+        <li>
+          <h4 className={'game-meter-number'}>
+            {wind} {deltaView(windΔ)}
+          </h4>{' '}
+          wind
+        </li>
+        <li>
+          <h4 className={'game-meter-number'}>
+            {energy} {deltaView(energyΔ)}
+          </h4>{' '}
+          energy
+        </li>
+      </ul>
+    </section>
+  )
+
+  const messagesView = (
+    <section className={'messages-container'}>
+      <ul>
+        {messages.map(({ text }) => (
+          <li key={text}>{text}</li>
+        ))}
+      </ul>
+    </section>
+  )
+
+  const { day, dayOfWeek, weekOfYear, year } = gameState.world
+  const calendarView = (
+    <section className={'calendar-container'}>
+      <p>{`day ${day}, year ${year} (week ${weekOfYear}/52)`}</p>
+    </section>
+  )
 
   return (
     <Fabric>
       <main className={'game'}>
         <aside className={'left'}>
           <h2 className={'title title-subtitle'}>sailsongs of</h2>
-          <h1 className={'title title-title'} title={VERSION}>scattershell</h1>
+          <h1 className={'title title-title'} title={VERSION}>
+            scattershell
+          </h1>
 
           {/*<section>
           <ul style={{ padding: '0px' }}>
@@ -277,42 +560,12 @@ function App() {
           </ul>
         </section>
         */}
-
-          <section className={'game-meters-container'}>
-            <ul className={'game-meters'}>
-              <li>
-                <h4 className={'game-meter-number'}>{wood}</h4> materials
-              </li>
-              <li>
-                <h4 className={'game-meter-number'}>{food}</h4> food
-              </li>
-              <li>
-                <h4 className={'game-meter-number'}>{wind}</h4> wind
-              </li>
-              <li>
-                <h4 className={'game-meter-number'}>{energy}</h4> energy
-              </li>
-            </ul>
-          </section>
-
-          <section className={'journeys-container'}>
-            <h4>In progress</h4>
-            {progressItems.length > 0 ? (
-              <ul>
-                {progressItems.map(item => {
-                  let { name, progress, duration, action, destName } = item
-                  return (
-                    <li key={`journey-${action}-${destName}`}>
-                      {name} ({Math.round(progress / 10)} / {duration / 10})
-                    </li>
-                  )
-                })}
-              </ul>
-            ) : (
-              'nothing in progress'
-            )}
-          </section>
-
+          <div className={'fixed'}>
+            {gameMeters}
+            {journeys}
+            {messagesView}
+            {calendarView}
+          </div>
           <section>
             <ScattershellMap
               places={islandsWithStates()}
@@ -337,7 +590,7 @@ function App() {
           <CurrentIsland
             island={islandsWithStates()[currentIsland]}
             islands={islandsWithStates()}
-            launchExpedition={launchExpedition}
+            launchVoyage={launchVoyage}
             addPerson={addPerson}
             addDwelling={addDwelling}
             food={food}
@@ -345,6 +598,8 @@ function App() {
             wood={wood}
             energy={energy}
             progressItems={progressItems}
+            spendEnergy={spendEnergy}
+            addSettlement={addSettlement}
           />
         </section>
       </main>
@@ -356,5 +611,8 @@ export default App
 
 /* scatterings
 - slower/faster travel (harness wind)
-- 
+- slower/faster harvesting of {materials|food}
+- higher/lower population cost
+- intensive agriculture / intensive foraging / intensive fishing
+- trade routes / isolation
 */

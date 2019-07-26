@@ -57,7 +57,6 @@ const neighbourDistance = source => {
   }, {})
   return neighbours
 }
-console.log(neighbourDistance('Last Hope'))
 
 const loc = (name, type, x, y, resources) => ({
   id: name,

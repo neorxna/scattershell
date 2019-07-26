@@ -1,4 +1,4 @@
-import {DevelopmentLevel, IslandMaxPopulations} from './IslandProperties'
+import { DevelopmentLevel, IslandMaxPopulations } from './IslandProperties'
 
 const developmentLevelForIsland = island => {
   // max population reached and treasures found
@@ -13,7 +13,7 @@ const developmentLevelForIsland = island => {
     return DevelopmentLevel.Developed
   }
   //max population not yet reached
-  if (island.population > 5) {
+  if (island.population >= 5) {
     return DevelopmentLevel.Burgeoning
   }
   return DevelopmentLevel.Undeveloped
@@ -21,36 +21,62 @@ const developmentLevelForIsland = island => {
 
 const Actions = {
   LaunchOutrigger: 'outrigger',
-  LaunchSmallFleet: 'small fleet',
-  LaunchLargeFleet: 'large fleet'
+  LaunchFleet: 'fleet'
+}
+
+const Seasons = {
+  Rainy: 'rainy season',
+  Dry: 'dry season'
 }
 
 const ActionCosts = {
   [Actions.LaunchOutrigger]: {
     woodΔ: -25,
     foodΔ: -50,
-    energyΔ: 0
+    energyΔ: -10
   },
-  [Actions.LaunchSmallFleet]: {
-    woodΔ: -50,
-    foodΔ: -250,
-    energyΔ: 0
-  },
-  [Actions.LaunchLargeFleet]: {
+  [Actions.LaunchFleet]: {
     woodΔ: -100,
-    foodΔ: -500,
-    energyΔ: 0
+    foodΔ: -200,
+    energyΔ: -20
   }
 }
 
-const initialIslandState = {
+const InitialIslandState = {
   population: 0,
   hasTemple: false,
+  hasSettlement: false,
   isDiscovered: false,
-  boonsAndBurdens: [],
+  scatterings: [],
   numDwellings: 0,
-  numTreasures: 0
+  numTreasures: 0,
+  bonusPopulation: 0
 }
 
+const InitialPlayerState = {
+  wood: 0,
+  food: 0,
+  wind: 0,
+  energy: 0
+}
 
-export { developmentLevelForIsland, ActionCosts, Actions, initialIslandState }
+const InitialWorldState = {
+  day: 1,
+  dayOfWeek: 1, // 1-7
+  weekOfYear: 1, // 1-52
+  season: Seasons.Rainy,
+  year: 1
+}
+
+const MaxDwellings = 5
+
+export {
+  Seasons,
+  developmentLevelForIsland,
+  ActionCosts,
+  Actions,
+  InitialIslandState,
+  InitialPlayerState,
+  InitialWorldState,
+  MaxDwellings
+}

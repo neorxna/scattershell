@@ -18,15 +18,21 @@ main {
   text-shadow: 5px 5px var(--outline-color);
   letter-spacing: .04em;
   font-family: 'Londrina Solid', cursive;
-  font-size: 6em;
+
   margin: 0px; 
   padding: 0px;
 }
 
 .title-subtitle {
-  
+  margin: 0px;
+  padding: 0px;
+  position: relative;
+  top: 25px;
 }
 .title-title {
+  margin: 0px;
+  padding: 0px;
+  font-size: 6em;
 }
 
 .game {
@@ -148,6 +154,7 @@ ul li {
 
 .game-meters-container {
 /*  font-size: 1.2em;*/
+overflow-x:hidden;
 }
 
 .game-meter-number {
@@ -157,4 +164,26 @@ ul li {
 .game-meters li {
   display: inline-block; 
   margin-right: 2em;
+}
+
+.game-meter-delta {
+  font-size: .4em;
+  font-weight: bold;
+}
+
+.messages-container {
+  margin-top: 1em;
+  max-width: 500px;
+}
+
+.bonus {
+  color: #00b842;
+}
+
+.fixed {
+  position:fixed;
+}
+
+.journeys-container {
+  max-width: 500px;
 }
