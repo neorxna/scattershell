@@ -7,6 +7,10 @@ a {
   color: white;
 }
 
+* {
+  font-family: 'Open Sans', sans-serif;
+}
+
 main {
   margin: 0px;
   color: var(--light-color);
@@ -186,4 +190,8 @@ overflow-x:hidden;
 
 .journeys-container {
   max-width: 500px;
+}
+
+.progress-status-item {
+  width: 520px;
 }

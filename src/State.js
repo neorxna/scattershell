@@ -191,7 +191,7 @@ function gameTick(fn) {
     let foodΔ = 0,
       woodΔ = 0,
       energyΔ = 1,
-      windΔ = Math.floor(Math.random() * 21) - 10
+      windΔ = Math.min(100,Math.floor(Math.random() * 21) - 10)
 
     Object.entries(islands)
       .filter(([id, island]) => island.isDiscovered && island.population > 0)
@@ -209,6 +209,7 @@ function gameTick(fn) {
       newEnergy = energy + energyΔ,
       newWind = wind + windΔ
 
+    // don't let anything go below zero
     return {
       ...previous,
       player: {

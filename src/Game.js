@@ -27,6 +27,10 @@ function developmentLevelForIsland(island) {
 }
 
 function calculateResourcesPerTick(resourceType, id, hasGatherers) {
+  const PerResourcesForResourceType = {
+    wood: WoodPerResources,
+    food: FoodPerResources
+  }
   const PerResources = PerResourcesForResourceType[resourceType]
   const { resources } = ScattershellLocations[id]
   return resources.reduce(
@@ -46,7 +50,7 @@ const islandsDetails = islands => {
   return islandNames.reduce((obj, key) => {
     const loc = ScattershellLocations[key]
     const state = islands ? islands[key] : {}
-    return {...obj, [key]: {...loc, ...state}}
+    return { ...obj, [key]: { ...loc, ...state } }
     /*const state = islands[key]
     return {
       ...obj,
@@ -60,11 +64,6 @@ const StartingLocation = ScattershellLocations.Morrigan.name
 const NumVoyagers = {
   [ActionTypes.LaunchOutrigger]: 2,
   [ActionTypes.LaunchFleet]: 5
-}
-
-const PerResourcesForResourceType = {
-  wood: WoodPerResources,
-  food: FoodPerResources
 }
 
 const Seasons = {

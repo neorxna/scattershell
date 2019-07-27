@@ -13,7 +13,7 @@ import { Messages, useMessaging } from './Messages'
 import { Calendar } from './Calendar'
 
 const VERSION = '0.6.1'
-const intervalDuration = 500
+const intervalDuration = 2000
 
 const json = _ => JSON.stringify(_, undefined, 4)
 

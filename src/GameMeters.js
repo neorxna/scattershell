@@ -1,9 +1,10 @@
 import React from 'react'
 import { Colors } from './Theme'
+import {useSpring, animated} from 'react-spring'
 
 function GameMeter(props) {
   const { qty, Δ, text } = props
-
+  const interpolator = useSpring({qty, from: { qty: qty - Δ}, config: { duration: 2000} })
   function deltaView(Δ) {
     return Δ === 0 ? null : (
       <span
@@ -16,7 +17,9 @@ function GameMeter(props) {
   return (
     <li>
       <h4 className={'game-meter-number'}>
-        {qty} {deltaView(Δ)}
+        <animated.span>{interpolator.qty.interpolate(x=>{
+          return Math.round(x)
+        })}</animated.span> {deltaView(Δ)}
       </h4>{' '}
       {text}
     </li>

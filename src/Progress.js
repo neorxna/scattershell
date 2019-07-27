@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Actions } from './Actions'
+import { ProgressIndicator } from 'office-ui-fabric-react'
 
 function useProgress() {
   const [items, setItems] = useState([])
@@ -39,18 +40,30 @@ function ProgressStatus(props) {
     <section className={'journeys-container'}>
       {items.length > 0 ? (
         <ul>
-          {items.map(item => {
-            const { name, progress, duration, actionType, destName } = item
-            const { emoji } = Actions[actionType]
-            return (
-              <li key={`${actionType}-${destName}`}>
-                {emoji} {name} ({Math.round(progress)} / {duration} progress)
-              </li>
-            )
-          })}
+          {items.map(item => (
+            <ProgressStatusItem {...item} />
+          ))}
         </ul>
       ) : null}
     </section>
+  )
+}
+
+function ProgressStatusItem(props) {
+  const { name, progress, duration, actionType, destName } = props
+  const rounded = Math.round(progress)
+  const action = Actions[actionType]
+  const { text, emoji } = action
+
+  return (
+    <li key={`${actionType}-${destName}`}>
+      <ProgressIndicator
+        className={'progress-status-item'}
+        label={`${emoji} ${text} (${rounded / duration * 100}%)`}
+        description={name}
+        percentComplete={Math.round(progress) / duration}
+      />
+    </li>
   )
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { InitialGameState, StartingLocation, NumVoyagers } from './Game'
 import { IslandTypes } from './IslandProperties'
 import { ScattershellLocations } from './Locations'
-import { ActionTypes } from './Actions'
+import { ActionTypes, Actions } from './Actions'
 import * as State from './State'
 
 function useScattershellEngine(messageProvider, progressProvider) {
@@ -27,16 +27,15 @@ function useScattershellEngine(messageProvider, progressProvider) {
     const { wind } = player
 
     setGameState(State.gameTick(deltas => setDeltas(deltas)))
-
     setGameState(State.worldTick())
-
     progressProvider.tick(wind)
     clearOneMessage()
   }
 
   function launchVoyage(fromName, toName, actionType, isBeginning) {
     const depart = () => {
-      // if spending was successful, append new task to progressItems
+      // if spending was successful, add to progress items
+      const destinationIsDiscovered = gameState.islands[toName].isDiscovered
       const voyage = {
         duration: isBeginning
           ? 10
@@ -44,12 +43,15 @@ function useScattershellEngine(messageProvider, progressProvider) {
         isBeginning,
         name: isBeginning
           ? `Voyage to ${toName}`
-          : `Voyage from ${fromName} to ${toName} by ${actionType}`,
+          : `Voyage from ${fromName} to ${
+              destinationIsDiscovered ? toName : 'an unknown land'
+            } by ${actionType}`,
         fromName,
         toName,
         actionType,
         numPeople: NumVoyagers[actionType],
-        progress: 0
+        progress: 0,
+        destinationIsDiscovered
       }
 
       const action = () => {
@@ -65,15 +67,28 @@ function useScattershellEngine(messageProvider, progressProvider) {
   }
 
   const arriveVoyage = voyage => {
-    const { fromName, toName, numPeople, actiontype } = voyage
+    const {
+      fromName,
+      toName,
+      numPeople,
+      actionType,
+      destinationIsDiscovered
+    } = voyage
+
+    const action = Actions[actionType]
     const to = ScattershellLocations[toName]
     const isInhospitable = to.type === IslandTypes.Rocks
 
-    const successMsg = `A ${to.type} island was encountered!`
+    const successMsg = destinationIsDiscovered
+      ? `The voyage disembarked safely.`
+      : `A ${to.type} island was discovered!`
     const rocksMsg = `An inhospitable outcrop of rocks was encountered. The ${numPeople} voyagers perished.`
-    const msg = `The ${actiontype} voyage from ${fromName} arrived at ${toName}. ${
+    const msg = `The ${
+      action.text
+    } voyage from ${fromName} arrived at ${toName}. ${
       isInhospitable ? rocksMsg : successMsg
     }`
+
     postMessage(msg)
     setGameState(State.arriveVoyage(voyage))
   }

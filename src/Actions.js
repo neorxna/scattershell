@@ -35,12 +35,12 @@ const ActionCosts = {
 
 const Actions = {
   [ActionTypes.LaunchOutrigger]: {
-    text: 'outrigger launched',
+    text: 'outrigger',
     emoji: '⛵',
     cost: ActionCosts[ActionTypes.LaunchOutrigger]
   },
   [ActionTypes.LaunchFleet]: {
-    text: 'fleet launched',
+    text: 'fleet',
     emoji: '⛵',
     cost: ActionCosts[ActionTypes.LaunchFleet]
   },
