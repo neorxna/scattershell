@@ -156,4 +156,4 @@ const ScattershellLocations = {
   ])
 }
 
-export default ScattershellLocations
+export { ScattershellLocations }

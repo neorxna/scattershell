@@ -1,6 +1,13 @@
 import { DevelopmentLevel, IslandMaxPopulations } from './IslandProperties'
+import { ScattershellLocations } from './Locations'
+import {
+  WoodPerResources,
+  FoodPerResources,
+  RequiresGathering
+} from './Resources'
+import { ActionTypes } from './Actions'
 
-const developmentLevelForIsland = island => {
+function developmentLevelForIsland(island) {
   // max population reached and treasures found
   if (island.numTreasures === 10 && island.hasTemple) {
     return DevelopmentLevel.Advanced
@@ -19,27 +26,52 @@ const developmentLevelForIsland = island => {
   return DevelopmentLevel.Undeveloped
 }
 
-const Actions = {
-  LaunchOutrigger: 'outrigger',
-  LaunchFleet: 'fleet'
+function calculateResourcesPerTick(resourceType, id, hasGatherers) {
+  const PerResources = PerResourcesForResourceType[resourceType]
+  const { resources } = ScattershellLocations[id]
+  return resources.reduce(
+    (total, resource) =>
+      total +
+      (!RequiresGathering[resource] ||
+      (RequiresGathering[resource] && hasGatherers)
+        ? PerResources[resource]
+        : 0),
+    0
+  )
+}
+
+const islandsDetails = islands => {
+  const islandNames = Object.keys(ScattershellLocations)
+
+  return islandNames.reduce((obj, key) => {
+    const loc = ScattershellLocations[key]
+    const state = islands ? islands[key] : {}
+    return {...obj, [key]: {...loc, ...state}}
+    /*const state = islands[key]
+    return {
+      ...obj,
+      [key]: { ...loc, ...(state || {}) }
+    }*/
+  }, {})
+}
+
+const StartingLocation = ScattershellLocations.Morrigan.name
+
+const NumVoyagers = {
+  [ActionTypes.LaunchOutrigger]: 2,
+  [ActionTypes.LaunchFleet]: 5
+}
+
+const PerResourcesForResourceType = {
+  wood: WoodPerResources,
+  food: FoodPerResources
 }
 
 const Seasons = {
-  Rainy: 'rainy season',
-  Dry: 'dry season'
-}
-
-const ActionCosts = {
-  [Actions.LaunchOutrigger]: {
-    woodΔ: -25,
-    foodΔ: -50,
-    energyΔ: -10
-  },
-  [Actions.LaunchFleet]: {
-    woodΔ: -100,
-    foodΔ: -200,
-    energyΔ: -20
-  }
+  Winter: 'winter',
+  Spring: 'spring',
+  Summer: 'summer',
+  Harvest: 'harvest'
 }
 
 const InitialIslandState = {
@@ -68,15 +100,24 @@ const InitialWorldState = {
   year: 1
 }
 
+const InitialGameState = {
+  islands: Object.keys(ScattershellLocations).reduce(
+    (obj, key) => ({ ...obj, [key]: InitialIslandState }),
+    {}
+  ),
+  player: InitialPlayerState,
+  world: InitialWorldState
+}
+
 const MaxDwellings = 5
 
 export {
-  Seasons,
   developmentLevelForIsland,
-  ActionCosts,
-  Actions,
-  InitialIslandState,
-  InitialPlayerState,
-  InitialWorldState,
-  MaxDwellings
+  islandsDetails,
+  calculateResourcesPerTick,
+  InitialGameState,
+  MaxDwellings,
+  Seasons,
+  NumVoyagers,
+  StartingLocation
 }

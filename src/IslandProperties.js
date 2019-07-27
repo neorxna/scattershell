@@ -13,9 +13,9 @@ const IslandDescriptions = {
     'This place is covered in guano, hospitable only to the many gulls that dwell here.',
   [IslandTypes.Small]: 'You look out upon a modest but hospitable island.',
   [IslandTypes.Medium]:
-    'You are relieved to find a plentiful and hospitable island.',
+    'You are relieved to find a hospitable and plentiful island.',
   [IslandTypes.Large]:
-    'You are glad to the gods to find a massive volcanic island, capable of sustaining a large population.'
+    'You are thankful to the gods to find a massive volcanic island, capable of sustaining a large population.'
 }
 
 const IslandIllustrations = {

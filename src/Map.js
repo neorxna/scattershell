@@ -4,6 +4,7 @@ import * as SVG from 'svg.js'
 import rough from 'roughjs/dist/rough.umd'
 import { Colors } from './Theme'
 import { IslandTypes } from './IslandProperties'
+import { islandsDetails } from './Game'
 
 const defaultScattershellMapProps = {
   places: [
@@ -53,7 +54,7 @@ const defaultScattershellMapProps = {
 
 function ScattershellMap(props) {
   const {
-    places,
+    islands,
     paths,
     baseMarkerOptions,
     activePlaceOptions,
@@ -69,7 +70,6 @@ function ScattershellMap(props) {
   const xOffset = -40,
     yOffset = 0
 
-  const _places = places
   const opts = baseMarkerOptions
 
   const righties = ['The Pip', 'Elder', 'Father']
@@ -134,7 +134,7 @@ function ScattershellMap(props) {
         })
     }
 
-    Object.values(_places).forEach(place => {
+    Object.values(islandsDetails(islands)).forEach(place => {
       if (place.isDiscovered) {
         let marker = placeMarker(place)
         svg.appendChild(marker)
@@ -143,7 +143,7 @@ function ScattershellMap(props) {
     })
 
     paths.forEach(([fromId, toId]) => {
-      let marker = pathMarker(_places[fromId], _places[toId])
+      let marker = pathMarker(islands[fromId], islands[toId])
       svg.appendChild(marker)
     })
   }
@@ -152,23 +152,22 @@ function ScattershellMap(props) {
   useEffect(() => {
     let svg = svgRef.current
     renderMap(svg)
-    console.log('rendered initial map')
   }, [svgRef.current])
 
-  // Re-render when islands are discovered or current island changes
-  const discoveries =
-    Object.entries(places).map(([name,place])=>(place.isDiscovered))
-    
   const reRender = () => {
     let svg = svgRef.current
     if (svg) {
-      console.log('re-rendering the map')
       while (svg.lastChild) {
         svg.removeChild(svg.lastChild)
       }
       renderMap(svg)
     }
   }
+
+  // Re-render when islands are discovered or current island changes
+  const discoveries = Object.entries(islands).map(
+    ([name, place]) => place.isDiscovered
+  )
 
   useEffect(reRender, discoveries)
   useEffect(reRender, [currentIsland])

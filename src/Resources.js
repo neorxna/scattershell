@@ -51,10 +51,10 @@ const IsDispersable = {
 
 const FoodPerResources = {
   [ResourceTypes.Shellfish]: 2,
-  [ResourceTypes.Fish]: 2,
-  [ResourceTypes.Pigs]: 1,
+  [ResourceTypes.Fish]: 3,
+  [ResourceTypes.Pigs]: 2,
   [ResourceTypes.Birds]: 1,
-  [ResourceTypes.BushFood]: 2,
+  [ResourceTypes.BushFood]: 3,
   [ResourceTypes.Coconuts]: 2,
   [ResourceTypes.RootVegetables]: 1,
   [ResourceTypes.PreciousShells]: 0,
@@ -62,7 +62,7 @@ const FoodPerResources = {
   [ResourceTypes.Flax]: 0,
   [ResourceTypes.Bamboo]: 1,
   [ResourceTypes.SturdyWood]: 0,
-  [ResourceTypes.FruitTrees]: 1,
+  [ResourceTypes.FruitTrees]: 2,
   [ResourceTypes.Guano]: 0
 }
 
@@ -76,11 +76,11 @@ const WoodPerResources = {
   [ResourceTypes.RootVegetables]: 0,
   [ResourceTypes.PreciousShells]: 2,
   [ResourceTypes.FreshWater]: 0,
-  [ResourceTypes.Flax]: 2,
-  [ResourceTypes.Bamboo]: 1,
+  [ResourceTypes.Flax]: 3,
+  [ResourceTypes.Bamboo]: 2,
   [ResourceTypes.SturdyWood]: 2,
   [ResourceTypes.FruitTrees]: 1,
-  [ResourceTypes.Guano]: 1
+  [ResourceTypes.Guano]: 2
 }
 
 const Boons = {}
