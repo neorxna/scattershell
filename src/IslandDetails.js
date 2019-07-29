@@ -1,5 +1,5 @@
 import React from 'react'
-import { developmentLevelForIsland } from './Game'
+import { calculateResourcesPerTick, developmentLevelForIsland } from './Game'
 import { IslandMaxPopulations, IslandDescriptions } from './IslandProperties'
 
 function IslandDetails(props) {
@@ -11,9 +11,13 @@ function IslandDetails(props) {
     bonusPopulation,
     numTreasures,
     numDwellings,
+    numGardens,
     hasSettlement,
     hasTemple
   } = island
+
+  const foodPerTick = calculateResourcesPerTick('food', island)
+  const woodPerTick = calculateResourcesPerTick('wood', island)
 
   return (
     <section className={'current-island-info'}>
@@ -24,6 +28,10 @@ function IslandDetails(props) {
       <ul>
         <li>
           <b>{developmentLevelForIsland(island)}</b>
+        </li>
+        <li>
+          Providing <b>{foodPerTick}</b> food, <b>{woodPerTick}</b> materials
+          per day
         </li>
         {hasSettlement ? (
           <li>
@@ -43,17 +51,14 @@ function IslandDetails(props) {
         <li>
           <b>{numDwellings}</b>/5 dwellings
         </li>
+        <li>
+          <b>{numGardens}</b>/5 gardens
+        </li>
         {hasTemple ? (
           <li>
             <b>has temple</b>
           </li>
         ) : null}
-        <li>
-          <b /> food contribution
-        </li>
-        <li>
-          <b /> materials contribution
-        </li>
       </ul>
     </section>
   )

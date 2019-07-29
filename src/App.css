@@ -46,10 +46,11 @@ main {
   overflow-y: auto;
   overflow-x: hidden;
   position: fixed;
-  max-width: 520px;
+  max-width: 530px;
   height: 100%;
   margin-left: 16px;
   padding: 0px 16px;
+  user-select: none;
 }
 
 .right {
@@ -61,20 +62,21 @@ main {
 h1,h2,h3,h4 {
   margin: 0px;
 }
+
 ul {
   padding: 0px;
   margin: 0px;
 }
 
 ul li {
-  margin-bottom: .6em;
+  margin-bottom: 1em;
   list-style-type: none;
 }
 
 .island-options li {
-  padding: 1em 0px;
- /* background-color: var(--light-color); */
-  color: var(--outline-color);
+ /* padding: 1em 0px;
+  background-color: var(--light-color); 
+  color: var(--outline-color);*/
 }
 
 .island-options a {
@@ -89,6 +91,11 @@ ul li {
 
 .island-options-details {
   margin-top: 1em;
+}
+
+.island-options ul {
+  margin: 0px; 
+  padding: 0px;
 }
 
 .map-svg {
@@ -107,7 +114,7 @@ ul li {
 .current-island section {
   background: white;
   color: var(--outline-color);
-  padding: 1.4em;
+  padding: 2em;
 }
 
 .current-island a {
@@ -130,17 +137,17 @@ ul li {
   flex: 1;
 }
 .current-island-illustration figure {
-  min-width: 320px;
-  overflow: hidden;
+  width: 100%;
 }
 .current-island-illustration img {
   display: block;
   width: 100%;
-  margin: 0px -16%;
+  margin: 0 -42px;
 }
 
 .current-island-info {
-  flex: 2;
+  flex: 1;
+  padding: 0px;
 }
 
 .current-island-options {
@@ -193,5 +200,34 @@ overflow-x:hidden;
 }
 
 .progress-status-item {
-  width: 520px;
+  width: 500px;
+}
+
+.current-island-resources {
+  margin-top: 4em;
+}
+
+.current-island-resources-details {
+  font-size: .8em;
+  margin: 1em;
+}
+
+.requirements { /*
+  color: #8d8d8d; */
+  font-weight: bold;
+}
+
+.requirements li {
+  margin: 0px; 
+  display: inline-block;
+  padding-right: 10px;
+}
+
+.hint-text {
+  font-style: italic;
+  font-size: 1em;
+}
+
+.voyage-hints {
+  padding: 0px !important;
 }

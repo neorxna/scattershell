@@ -6,14 +6,14 @@ import { fabricIcons, fabricTheme, Colors } from './Theme'
 import { Island } from './Island'
 import ScattershellMap from './Map'
 import { GameMeters } from './GameMeters'
-import { useScattershellEngine } from './Engine'
+import { useScattershellEngine, tickInterval } from './Engine'
 import { StartingLocation, islandsDetails } from './Game'
 import { ProgressStatus, useProgress } from './Progress'
 import { Messages, useMessaging } from './Messages'
 import { Calendar } from './Calendar'
 
-const VERSION = '0.6.1'
-const intervalDuration = 2000
+const VERSION = '0.7'
+const intervalDuration = tickInterval
 
 const json = _ => JSON.stringify(_, undefined, 4)
 
@@ -45,17 +45,16 @@ function App() {
   const messaging = useMessaging()
   const progress = useProgress()
 
-  const { gameState, gameEvents, deltas } = useScattershellEngine(
+  const { gameState, tick, doAction, deltas } = useScattershellEngine(
     messaging,
     progress
   )
   const { world, player } = gameState
-  const { gameTick } = gameEvents
   // the island that is currently being viewed.
   const [currentIsland, setCurrentIsland] = useState(StartingLocation)
 
   // Set the game loop interval
-  useInterval(gameTick, intervalDuration)
+  useInterval(tick, intervalDuration)
 
   const islands = islandsDetails(gameState.islands)
   return (
@@ -74,7 +73,7 @@ function App() {
             <Calendar world={world} />
           </div>
 
-          <section>
+          <section style={{marginTop:'8em'}}>
             <ScattershellMap
               islands={islands}
               currentIsland={currentIsland}
@@ -85,11 +84,12 @@ function App() {
 
         <section className={'right'}>
           <Island
+            game={gameState}
             player={player}
             island={islands[currentIsland]}
             islands={islands}
             progress={progress}
-            gameEvents={gameEvents}
+            doAction={doAction}
           />
         </section>
       </main>

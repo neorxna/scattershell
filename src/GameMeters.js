@@ -1,10 +1,16 @@
 import React from 'react'
 import { Colors } from './Theme'
-import {useSpring, animated} from 'react-spring'
+import { useSpring, animated } from 'react-spring'
+import { tickInterval } from './Engine'
+import * as numeral from 'numeral'
 
 function GameMeter(props) {
   const { qty, Δ, text } = props
-  const interpolator = useSpring({qty, from: { qty: qty - Δ}, config: { duration: 2000} })
+  const interpolator = useSpring({
+    qty,
+    from: { qty: qty - Δ },
+    config: { duration: tickInterval }
+  })
   function deltaView(Δ) {
     return Δ === 0 ? null : (
       <span
@@ -17,9 +23,13 @@ function GameMeter(props) {
   return (
     <li>
       <h4 className={'game-meter-number'}>
-        <animated.span>{interpolator.qty.interpolate(x=>{
-          return Math.round(x)
-        })}</animated.span> {deltaView(Δ)}
+        <animated.span>
+          {interpolator.qty.interpolate(x => {
+            const num = Math.round(x)
+            return num >= 1000 ? numeral(num).format('0.0a') : num
+          })}
+        </animated.span>{' '}
+        {deltaView(Δ)}
       </h4>{' '}
       {text}
     </li>
@@ -45,10 +55,10 @@ function GameMeters(props) {
   return (
     <section className={'game-meters-container'}>
       <ul className={'game-meters'}>
-        <GameMeter qty={food} Δ={foodΔ} text={'food'} />
-        <GameMeter qty={wood} Δ={woodΔ} text={'materials'} />
-        <GameMeter qty={energy} Δ={energyΔ} text={'energy'} />
-        <GameMeter qty={wind} Δ={windΔ} text={'wind'} />
+        <GameMeter qty={food} Δ={foodΔ} text={'food 🥝'} />
+        <GameMeter qty={wood} Δ={woodΔ} text={'materials ⚒️'} />
+        <GameMeter qty={energy} Δ={energyΔ} text={'energy ⚡'} />
+        <GameMeter qty={wind} Δ={windΔ} text={'wind 💨'} />
       </ul>
     </section>
   )

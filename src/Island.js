@@ -7,16 +7,17 @@ import { IslandActionsList } from './IslandActions'
 import { VoyageChoicesList } from './IslandVoyages'
 
 function Island(props) {
-  const { island, islands, player, world, gameEvents, progress } = props
-  const { type, name, resources } = island
+  const { game, island, islands, player, world, doAction, progress } = props
+  const { type, name, resources, isDiscovered } = island
 
   const islandActions = (
     <section className={'current-island-options mv2'}>
       <IslandActionsList
+        game={game}
         island={island}
         player={player}
         world={world}
-        gameEvents={gameEvents}
+        doAction={doAction}
       />
     </section>
   )
@@ -27,8 +28,9 @@ function Island(props) {
       <VoyageChoicesList
         island={island}
         islands={islands}
+        game={game}
         progress={progress}
-        gameEvents={gameEvents}
+        doAction={doAction}
       />
     </section>
   )
@@ -42,10 +44,10 @@ function Island(props) {
           </figure>
         </aside>
         <IslandDetails island={island} />
+        <IslandResources island={island} />
       </div>
-      <IslandResources island={island} />
-      {islandActions}
-      {unexploredIslands}
+      {isDiscovered ? islandActions : null}
+      {isDiscovered ? unexploredIslands : null}
     </div>
   )
 }

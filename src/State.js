@@ -1,14 +1,26 @@
-import { WoodPerResources, FoodPerResources } from './Resources'
+import {
+  WoodPerResources,
+  FoodPerResources,
+  IsDispersible,
+  IsGardenFood
+} from './Resources'
 import { ScattershellLocations } from './Locations'
 import { IslandMaxPopulations } from './IslandProperties'
-import { MaxDwellings, NumVoyagers, calculateResourcesPerTick } from './Game'
-import { Actions } from './Actions'
+import {
+  MaxDwellings,
+  MaxGardens,
+  NumVoyagers,
+  calculateResourcesPerTick,
+  randomChoice,
+  SettlementRequiredPeople
+} from './Game'
+import { Actions, ActionTypes, ActionCosts } from './Actions'
 
-function spendEnergy(id) {
+function spendEnergy(id, task, fn) {
   return previous => {
-    const { islands, player } = previous
-    const island = islands[id]
-    const { resources } = island
+    const { player } = previous
+    const location = ScattershellLocations[id]
+    const { resources } = location
     const { energy, food, wood } = player
 
     const foodScore = resources.reduce(
@@ -66,7 +78,6 @@ function updateGameState(resourceChanges, islandUpdateFn, willSpend, free) {
       islandUpdateFn == undefined ? islands : islandUpdateFn(islands)
 
     if (!insufficient && willSpend != undefined && !abort) willSpend()
-
     let update = {
       ...previous,
       player: playerUpdate,
@@ -78,9 +89,23 @@ function updateGameState(resourceChanges, islandUpdateFn, willSpend, free) {
   }
 }
 
-const addPerson = (islandName, fn) =>
+const islandProperty = (islandName, updateFn) => {
+  return previousIslands => {
+    const island = previousIslands[islandName]
+    const update = updateFn(island)
+    return {
+      ...previousIslands,
+      [islandName]: {
+        ...island,
+        ...update
+      }
+    }
+  }
+}
+
+const beginAddPerson = (islandName, task, fn) =>
   updateGameState(
-    { foodΔ: -50 },
+    ActionCosts[ActionTypes.AddPerson],
     previousIslands => {
       const island = previousIslands[islandName]
       const { population, bonusPopulation, hasSettlement } = island
@@ -91,58 +116,108 @@ const addPerson = (islandName, fn) =>
 
       return population === totalPopulationLimit || !hasSettlement
         ? false
-        : {
-            ...previousIslands,
-            [islandName]: {
-              ...island,
-              population: population + 1
-            }
-          }
+        : previousIslands
     },
     fn
   )
 
-const addDwelling = (islandName, fn) =>
+const endAddPerson = islandName =>
   updateGameState(
-    { woodΔ: -100 },
+    {},
+    islandProperty(islandName, island => ({
+      population: island.population + 1
+    }))
+  )
+
+// TODO use action validators
+
+const beginAddDwelling = (islandName, task, fn) =>
+  updateGameState(
+    ActionCosts[ActionTypes.AddDwelling],
     previousIslands => {
       const island = previousIslands[islandName]
-      const { numDwellings, bonusPopulation, hasSettlement } = island
+      const { numDwellings, hasSettlement } = island
 
       return numDwellings === MaxDwellings || !hasSettlement
         ? false
-        : {
-            ...previousIslands,
-            [islandName]: {
-              ...island,
-              numDwellings: numDwellings + 1,
-              bonusPopulation: bonusPopulation + 5
-            }
-          }
+        : previousIslands
     },
     fn
   )
 
-const addSettlement = (islandName, fn) =>
+const endAddDwelling = islandName =>
   updateGameState(
-    { woodΔ: -250 },
+    {},
+    islandProperty(islandName, ({ numDwellings, bonusPopulation }) => ({
+      numDwellings: numDwellings + 1,
+      bonusPopulation: bonusPopulation + 5
+    }))
+  )
+
+const beginAddSettlement = (islandName, task, fn) =>
+  updateGameState(
+    ActionCosts[ActionTypes.AddSettlement],
+    previousIslands => {
+      const island = previousIslands[islandName]
+      const { population } = island
+      // requires N people on the island
+      return population < SettlementRequiredPeople ? false : previousIslands
+    },
+    fn
+  )
+
+const endAddSettlement = (islandName, task) =>
+  updateGameState(
+    {},
+    islandProperty(islandName, island => ({
+      hasSettlement: true
+    }))
+  )
+
+const beginAddTemple = (islandName, task, fn) =>
+  updateGameState(
+    ActionCosts[ActionTypes.AddTemple],
     previousIslands => {
       const island = previousIslands[islandName]
       const { population } = island
       // requires 5 people on the island
-      return population < 5
-        ? false
-        : {
-            ...previousIslands,
-            [islandName]: {
-              ...island,
-              hasSettlement: true
-            }
-          }
+      return population < 5 ? false : previousIslands
     },
     fn
   )
 
+const endAddTemple = islandName =>
+  updateGameState(
+    {},
+    islandProperty(islandName, island => ({
+      hasTemple: true
+    }))
+  )
+
+// TODO generic begin validator
+const beginAddGarden = (islandName, task, fn) =>
+  updateGameState(
+    ActionCosts[ActionTypes.AddGarden],
+    previousIslands => {
+      // requires 3 people and not islands > 5
+      const island = previousIslands[islandName]
+      const { numGardens } = island
+      const isMaxGardens = numGardens === MaxGardens
+      return isMaxGardens ? false : previousIslands
+    },
+    fn
+  )
+
+const endAddGarden = islandName =>
+  updateGameState(
+    {},
+    islandProperty(islandName, island => {
+      const { numGardens } = island
+      return {
+        numGardens: numGardens + 1
+      }
+    })
+  )
 /*
   when an island is discovered via voyage, the voyaging people seed the island's population.
   - unless the destination is a rocky island, in which case the people are lost.
@@ -151,27 +226,54 @@ const addSettlement = (islandName, fn) =>
   - the safe choice is to launch an outrigger first to scout, then a fleet to populate 
   
 */
-function arriveVoyage(voyage) {
-  const { fromName, toName, numPeople } = voyage
+function arriveVoyage(fromName, voyage) {
+  const { toName, actionType } = voyage
+  const numPeople = NumVoyagers[actionType]
   return updateGameState(
     {},
     previousIslands => {
       const previousTo = previousIslands[toName]
-      const previousFrom = previousIslands[fromName] || { scatterings: [] }
+      const previousFrom = previousIslands[fromName] || {
+        scatterings: [],
+        resources: []
+      }
 
       // ensure we don't go over the max population of the destination
       const toLocation = ScattershellLocations[toName]
-      const { maxPopulation } = toLocation
+      const maxPopulation = IslandMaxPopulations[toLocation.type]
+
       const { bonusPopulation } = previousTo
+      const { resources } = previousFrom
 
       const totalPopulationLimit = bonusPopulation + maxPopulation
       const maxPop = previousTo.population + numPeople >= totalPopulationLimit
+
+      // if there are any dispersible resources on the island and voyage is fleet,
+      // transfer one at random to the destination island
+      // only transfer resources that don't already exist on destination
+      const dispersibleResources =
+        actionType === ActionTypes.LaunchFleet
+          ? resources.filter(
+              resource =>
+                IsDispersible[resource] &&
+                previousTo.resources.indexOf(resource) === -1
+            )
+          : []
+
+      const dispersed =
+        dispersibleResources.length > 0 ? randomChoice(dispersibleResources) : null
+
+      const toResources = [...previousTo.resources, dispersed].filter(
+        x => x != null
+      )
+
       return {
         ...previousIslands,
         [toName]: {
           ...previousTo,
           isDiscovered: true,
-          scatterings: previousFrom.scatterings,
+          resources: toResources,
+          scatterings: [...previousFrom.scatterings],
           population: maxPop
             ? previousTo.population
             : previousTo.population + numPeople
@@ -191,15 +293,17 @@ function gameTick(fn) {
     let foodΔ = 0,
       woodΔ = 0,
       energyΔ = 1,
-      windΔ = Math.min(100,Math.floor(Math.random() * 21) - 10)
+      windΔ = Math.floor(Math.random() * 21) - 10
 
+    // only give resources for discovered islands with at least one person
     Object.entries(islands)
       .filter(([id, island]) => island.isDiscovered && island.population > 0)
       .forEach(([id, island]) => {
-        let hasGatherers = island.population >= 5
-        foodΔ += calculateResourcesPerTick('food', id, hasGatherers)
-        woodΔ += calculateResourcesPerTick('wood', id, hasGatherers)
+        foodΔ += calculateResourcesPerTick('food', island)
+        woodΔ += calculateResourcesPerTick('wood', island)
         foodΔ -= island.population
+        // bonus energy if island has temple
+        energyΔ += island.hasTemple ? 1 : 0
       })
 
     fn({ foodΔ, woodΔ, energyΔ, windΔ })
@@ -207,7 +311,7 @@ function gameTick(fn) {
     const newWood = wood + woodΔ,
       newFood = food + foodΔ,
       newEnergy = energy + energyΔ,
-      newWind = wind + windΔ
+      newWind = Math.min(100, wind + windΔ)
 
     // don't let anything go below zero
     return {
@@ -243,9 +347,11 @@ const worldTick = () =>
     }
   })
 
-function launchVoyage(fromName, toName, actionType, fn) {
+function launchVoyage(fromName, task, fn) {
+  const { actionType, toName, isBeginning } = task
+
   const removePopulationFrom = previousIslands => {
-    // remove the population
+    // remove the population from source island
     let previousFrom = previousIslands[fromName]
     let numVoyagers = NumVoyagers[actionType]
     let enough = previousFrom.population >= numVoyagers
@@ -263,17 +369,25 @@ function launchVoyage(fromName, toName, actionType, fn) {
   }
 
   const { cost } = Actions[actionType]
-
-  return updateGameState(cost, removePopulationFrom, fn)
+  const voyageCost = isBeginning ? {} : cost
+  const voyageUpdate = isBeginning ? x => x : removePopulationFrom
+  return updateGameState(voyageCost, voyageUpdate, fn)
 }
 
 export {
-  spendEnergy,
-  addPerson,
-  addDwelling,
-  addSettlement,
   gameTick,
   worldTick,
+  arriveVoyage,
   launchVoyage,
-  arriveVoyage
+  spendEnergy,
+  beginAddGarden,
+  beginAddDwelling,
+  beginAddPerson,
+  beginAddSettlement,
+  beginAddTemple,
+  endAddDwelling,
+  endAddPerson,
+  endAddSettlement,
+  endAddGarden,
+  endAddTemple
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Actions } from './Actions'
+import { Actions, ActionTypes } from './Actions'
 import { ProgressIndicator } from 'office-ui-fabric-react'
 
 function useProgress() {
@@ -9,7 +9,7 @@ function useProgress() {
     items
       .filter(x => x.progress >= x.duration)
       .forEach(item => {
-        item.action()
+        item.onFinished(item)
       })
 
     // update the state of any progressItems
@@ -18,7 +18,11 @@ function useProgress() {
       previous
         .filter(x => x.progress < x.duration)
         .map(item => {
-          let progress = item.progress + 1 + 0.05 * wind
+          const { duration, actionType } = item
+          const isVoyage =
+            actionType === ActionTypes.LaunchFleet ||
+            actionType === ActionTypes.LaunchOutrigger
+          const progress = item.progress + 1 + (isVoyage ? (0.05 * wind) : 0)
           return {
             ...item,
             progress: progress > item.duration ? item.duration : progress
@@ -28,7 +32,6 @@ function useProgress() {
   }
 
   const add = item => setItems(previous => [...previous, item])
-
   return { items, add, tick }
 }
 
@@ -50,18 +53,15 @@ function ProgressStatus(props) {
 }
 
 function ProgressStatusItem(props) {
-  const { name, progress, duration, actionType, destName } = props
-  const rounded = Math.round(progress)
-  const action = Actions[actionType]
-  const { text, emoji } = action
-
+  const { name, progress, duration, actionType, destName, text, emoji } = props
+  const roundedPct = Math.round((progress / duration) * 100)
   return (
     <li key={`${actionType}-${destName}`}>
       <ProgressIndicator
         className={'progress-status-item'}
-        label={`${emoji} ${text} (${rounded / duration * 100}%)`}
+        label={`${emoji} ${text} (${roundedPct}%)`}
         description={name}
-        percentComplete={Math.round(progress) / duration}
+        percentComplete={progress / duration}
       />
     </li>
   )

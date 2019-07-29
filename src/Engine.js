@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { InitialGameState, StartingLocation, NumVoyagers } from './Game'
-import { IslandTypes } from './IslandProperties'
-import { ScattershellLocations } from './Locations'
+import { InitialGameState, StartingLocation } from './Game'
 import { ActionTypes, Actions } from './Actions'
-import * as State from './State'
+import { gameTick, worldTick, launchVoyage } from './State'
+
+const tickInterval = 2000
 
 function useScattershellEngine(messageProvider, progressProvider) {
   const [gameState, setGameState] = useState(InitialGameState)
@@ -18,114 +18,51 @@ function useScattershellEngine(messageProvider, progressProvider) {
 
   useEffect(() => {
     // discover the starting island on game launch
-    launchVoyage('Home', StartingLocation, ActionTypes.LaunchFleet, true)
+    doAction(ActionTypes.LaunchFleet, 'Beginning', {
+      toName: StartingLocation,
+      isBeginning: true,
+      actionType: ActionTypes.LaunchFleet
+    })
   }, [])
 
-  const gameTick = () => {
+  const tick = () => {
     // The game loop.
     const { player } = gameState
     const { wind } = player
 
-    setGameState(State.gameTick(deltas => setDeltas(deltas)))
-    setGameState(State.worldTick())
+    setGameState(gameTick(deltas => setDeltas(deltas)))
+    setGameState(worldTick())
     progressProvider.tick(wind)
     clearOneMessage()
   }
 
-  function launchVoyage(fromName, toName, actionType, isBeginning) {
-    const depart = () => {
-      // if spending was successful, add to progress items
-      const destinationIsDiscovered = gameState.islands[toName].isDiscovered
-      const voyage = {
-        duration: isBeginning
-          ? 10
-          : ScattershellLocations[fromName].neighbourDistance[toName] * 10,
-        isBeginning,
-        name: isBeginning
-          ? `Voyage to ${toName}`
-          : `Voyage from ${fromName} to ${
-              destinationIsDiscovered ? toName : 'an unknown land'
-            } by ${actionType}`,
-        fromName,
-        toName,
-        actionType,
-        numPeople: NumVoyagers[actionType],
-        progress: 0,
-        destinationIsDiscovered
-      }
-
-      const action = () => {
-        //mark this island as discovered
-        arriveVoyage(voyage)
-      }
-
-      progressProvider.add({ ...voyage, action })
-    }
-
-    if (isBeginning) depart()
-    else setGameState(State.launchVoyage(fromName, toName, actionType, depart))
-  }
-
-  const arriveVoyage = voyage => {
-    const {
-      fromName,
-      toName,
-      numPeople,
-      actionType,
-      destinationIsDiscovered
-    } = voyage
-
+  const doAction = (actionType, islandName, task) => {
     const action = Actions[actionType]
-    const to = ScattershellLocations[toName]
-    const isInhospitable = to.type === IslandTypes.Rocks
-
-    const successMsg = destinationIsDiscovered
-      ? `The voyage disembarked safely.`
-      : `A ${to.type} island was discovered!`
-    const rocksMsg = `An inhospitable outcrop of rocks was encountered. The ${numPeople} voyagers perished.`
-    const msg = `The ${
-      action.text
-    } voyage from ${fromName} arrived at ${toName}. ${
-      isInhospitable ? rocksMsg : successMsg
-    }`
-
-    postMessage(msg)
-    setGameState(State.arriveVoyage(voyage))
+    const {
+      beginStateChange,
+      endStateChange,
+      finishMessage,
+      getDuration,
+      getName
+    } = action
+    setGameState(
+      beginStateChange(islandName, task, () => {
+        progressProvider.add({
+          ...action,
+          onFinished: () => {
+            setGameState(endStateChange(islandName, task))
+            postMessage(finishMessage(islandName, task))
+          },
+          actionType,
+          duration: getDuration(task),
+          name: getName(task),
+          progress: 0
+        })
+      })
+    )
   }
 
-  const spendEnergy = islandName => setGameState(State.spendEnergy(islandName))
-
-  const addSettlement = islandName =>
-    setGameState(
-      State.addSettlement(islandName, () => {
-        postMessage(`a settlement was built in ${islandName}!`)
-      })
-    )
-
-  const addDwelling = islandName =>
-    setGameState(
-      State.addDwelling(islandName, () => {
-        postMessage(`a dwelling was built in ${islandName}!`)
-      })
-    )
-
-  const addPerson = islandName =>
-    setGameState(
-      State.addPerson(islandName, () => {
-        postMessage(`a child was born in ${islandName}!`)
-      })
-    )
-
-  const gameEvents = {
-    spendEnergy,
-    addSettlement,
-    addDwelling,
-    addPerson,
-    launchVoyage,
-    gameTick
-  }
-
-  return { gameState, gameEvents, deltas }
+  return { gameState, doAction, tick, deltas }
 }
 
-export { useScattershellEngine }
+export { useScattershellEngine, tickInterval }

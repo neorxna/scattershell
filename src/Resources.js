@@ -15,6 +15,23 @@ const ResourceTypes = {
   Guano: 'guano'
 }
 
+const IsGardenFood = {
+  [ResourceTypes.Shellfish]: false,
+  [ResourceTypes.Fish]: false,
+  [ResourceTypes.Pigs]: false,
+  [ResourceTypes.Birds]: false,
+  [ResourceTypes.BushFood]: false,
+  [ResourceTypes.Coconuts]: false,
+  [ResourceTypes.RootVegetables]: true,
+  [ResourceTypes.PreciousShells]: false,
+  [ResourceTypes.FreshWater]: false,
+  [ResourceTypes.Flax]: false,
+  [ResourceTypes.Bamboo]: false,
+  [ResourceTypes.SturdyWood]: false,
+  [ResourceTypes.FruitTrees]: true,
+  [ResourceTypes.Guano]: false
+}
+
 const RequiresGathering = {
   [ResourceTypes.Shellfish]: false,
   [ResourceTypes.Fish]: false,
@@ -32,7 +49,7 @@ const RequiresGathering = {
   [ResourceTypes.Guano]: false
 }
 
-const IsDispersable = {
+const IsDispersible = {
   [ResourceTypes.Shellfish]: false,
   [ResourceTypes.Fish]: false,
   [ResourceTypes.Pigs]: true,
@@ -46,7 +63,7 @@ const IsDispersable = {
   [ResourceTypes.Bamboo]: false,
   [ResourceTypes.SturdyWood]: false,
   [ResourceTypes.FruitTrees]: true,
-  [ResourceTypes.Guano]: false
+  [ResourceTypes.Guano]: true
 }
 
 const FoodPerResources = {
@@ -93,5 +110,6 @@ export {
   Boons,
   Burdens,
   RequiresGathering,
-  IsDispersable
+  IsDispersible,
+  IsGardenFood
 }

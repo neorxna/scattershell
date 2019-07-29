@@ -12,6 +12,7 @@ const paths = [
   ['Great Arc', 'Shell Cove', 12],
   ['The Splinter', 'Great Arc', 25],
   ['Great Arc', 'The Splinter', 25],
+  ['Great Arc', 'The Pip', 40], // no way back!
   ['The Pip', 'The Splinter', 15],
   ['The Splinter', 'The Pip', 15],
   ['Afallon', 'The Splinter', 22],
@@ -78,7 +79,6 @@ const ScattershellLocations = {
     'Flax',
     'Bamboo',
     'BushFood',
-    'RootVegetables',
     'SturdyWood'
   ]),
   'Morrigan': loc('Morrigan', IslandTypes.Medium, 46, 75, [
@@ -114,10 +114,10 @@ const ScattershellLocations = {
   Birdstar: loc('Birdstar', IslandTypes.Guano, 40, 30, ['Guano', 'Birds']),
   'Last Hope': loc('Last Hope', IslandTypes.Large, 97, 8, [
     'Shellfish',
-    'Fish',
     'Birds',
     'SturdyWood',
-    'FreshWater'
+    'FreshWater',
+    'FruitTrees'
   ]),
   'Island of Pearls': loc('Island of Pearls', IslandTypes.Small, 98, 18, [
     'PreciousShells',

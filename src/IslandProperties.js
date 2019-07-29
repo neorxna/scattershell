@@ -19,19 +19,19 @@ const IslandDescriptions = {
 }
 
 const IslandIllustrations = {
-  [IslandTypes.Rocks]: '/island_types/rock.png',
-  [IslandTypes.Guano]: '/island_types/gull3.png',
-  [IslandTypes.Small]: '/island_types/shells.png',
-  [IslandTypes.Medium]: '/island_types/coconuts.png',
-  [IslandTypes.Large]: '/island_types/volcano.png'
+  [IslandTypes.Rocks]: '/island_types/rock_cropped.png',
+  [IslandTypes.Guano]: '/island_types/gull3_cropped.png',
+  [IslandTypes.Small]: '/island_types/shells_cropped.png',
+  [IslandTypes.Medium]: '/island_types/coconuts_cropped.png',
+  [IslandTypes.Large]: '/island_types/volcano_cropped.png'
 }
 
 const IslandMaxPopulations = {
   [IslandTypes.Rocks]: 0,
   [IslandTypes.Guano]: 5,
   [IslandTypes.Small]: 10,
-  [IslandTypes.Medium]: 50,
-  [IslandTypes.Large]: 100
+  [IslandTypes.Medium]: 25,
+  [IslandTypes.Large]: 50
 }
 
 const DevelopmentLevel = {
