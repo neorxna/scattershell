@@ -66,7 +66,7 @@ function IslandActionsList(props) {
         validate={() => Actions[ActionTypes.AddSettlement].validate(game, name, {})}
       >
         <p>
-          Raise a settlement on {name}. At least <b>5 people</b> need to be
+          Raise a settlement on {name}. At least <b>2 people</b> need to be
           present on the island.
         </p>
         <p>
