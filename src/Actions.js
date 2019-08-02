@@ -5,15 +5,14 @@ import {
   validateAddPerson,
   validateAddSettlement,
   validateAddTemple,
-  validateLaunchFleet,
-  validateLaunchOutrigger
+  validateLaunch
 } from './ActionValidation'
 import * as State from './State'
 import { IslandTypes } from './IslandProperties'
 
 const ActionTypes = {
-  LaunchOutrigger: 'launch outrigger',
-  LaunchFleet: 'launch fleet',
+  LaunchOutrigger: 'outrigger voyage',
+  LaunchFleet: 'fleet voyage',
   AddPerson: 'new child',
   AddDwelling: 'build dwelling',
   AddSettlement: 'raise settlement',
@@ -53,42 +52,43 @@ const ActionCosts = {
   }
 }
 
-const finishVoyage = (fromName, task) => {
-  const { toName, numPeople, actionType, destinationIsDiscovered } = task
-
+const finishVoyage = actionInstance => {
+  const { islandName, actionType, task } = actionInstance
+  const { toName, destinationIsDiscovered } = task
+  const { numPeople } = Actions[actionType]
   const to = ScattershellLocations[toName]
   const isInhospitable = to.type === IslandTypes.Rocks
 
   const successMsg = destinationIsDiscovered
     ? `The voyage disembarked safely.`
     : `A ${to.type} island was discovered!`
-  
+
   const rocksMsg = `An inhospitable outcrop of rocks was encountered. The ${numPeople} voyagers perished.`
-  const msg = `The voyage from ${fromName} arrived at ${toName}. ${
+  const msg = `The voyage from ${islandName} arrived at ${toName}. ${
     isInhospitable ? rocksMsg : successMsg
   }`
   return msg
 }
 
 const getVoyageDuration = task => {
-  const { fromName, toName, isBeginning } = task
+  const { islandName, toName, isBeginning } = task
   return isBeginning
     ? 10
-    : ScattershellLocations[fromName].neighbourDistance[toName] * 10
+    : ScattershellLocations[islandName].neighbourDistance[toName] * 10
 }
 
 const getVoyageName = task => {
   const {
     actionType,
     destinationIsDiscovered,
-    fromName,
+    islandName,
     toName,
     isBeginning
   } = task
   return isBeginning
     ? `Voyage to ${toName}`
-    : `Voyage from ${fromName} to ${
-        destinationIsDiscovered ? toName : 'a rumored land'
+    : `Voyage from ${islandName} to ${
+        destinationIsDiscovered ? toName : 'an undiscovered land'
       }`
 }
 
@@ -101,7 +101,8 @@ const Actions = {
     emoji: '⚡',
     validate: () => [{ met: true }],
     getDuration: () => {},
-    getName: () => {}
+    getName: () => {},
+    hidden: true // don't show in progress
   },
   [ActionTypes.LaunchOutrigger]: {
     text: 'launch outrigger',
@@ -110,9 +111,10 @@ const Actions = {
     finishMessage: finishVoyage,
     emoji: '⛵',
     cost: ActionCosts[ActionTypes.LaunchOutrigger],
-    validate: validateLaunchOutrigger,
+    validate: validateLaunch,
     getDuration: getVoyageDuration,
-    getName: getVoyageName
+    getName: getVoyageName,
+    numPeople: 2
   },
   [ActionTypes.LaunchFleet]: {
     text: 'launch fleet',
@@ -121,16 +123,17 @@ const Actions = {
     finishMessage: finishVoyage,
     emoji: '⛵',
     cost: ActionCosts[ActionTypes.LaunchFleet],
-    validate: validateLaunchFleet,
+    validate: validateLaunch,
     getDuration: getVoyageDuration,
-    getName: getVoyageName
+    getName: getVoyageName,
+    numPeople: 5
   },
   [ActionTypes.AddPerson]: {
     text: 'spawn person',
     beginStateChange: State.beginAddPerson,
     endStateChange: State.endAddPerson,
     emoji: '👶',
-    finishMessage: (islandName, task) => `a child was born in ${islandName}!`,
+    finishMessage: ({ islandName }) => `a child was born in ${islandName}!`,
     cost: ActionCosts[ActionTypes.AddPerson],
     validate: validateAddPerson,
     getDuration: () => 20,
@@ -142,8 +145,7 @@ const Actions = {
     cost: ActionCosts[ActionTypes.AddDwelling],
     beginStateChange: State.beginAddDwelling,
     endStateChange: State.endAddDwelling,
-    finishMessage: (islandName, task) =>
-      `a dwelling was built in ${islandName}!`,
+    finishMessage: ({ islandName }) => `a dwelling was built in ${islandName}!`,
     // todo settlement required
     validate: validateAddDwelling,
     getDuration: () => 20,
@@ -155,8 +157,9 @@ const Actions = {
     beginStateChange: State.beginAddSettlement,
     endStateChange: State.endAddSettlement,
     emoji: '🏠',
-    finishMessage: (islandName, task) =>
-      `a settlement was raised in ${islandName}!`,
+    finishMessage: ({ islandName }) => {
+      return `a settlement was raised in ${islandName}!`
+    },
     cost: ActionCosts[ActionTypes.AddSettlement],
     validate: validateAddSettlement,
     getDuration: () => 40,
@@ -168,8 +171,7 @@ const Actions = {
     beginStateChange: State.beginAddGarden,
     endStateChange: State.endAddGarden,
     emoji: '🥬',
-    finishMessage: (islandName, task) =>
-      `a garden was planted in ${islandName}!`,
+    finishMessage: ({ islandName }) => `a garden was planted in ${islandName}!`,
     cost: ActionCosts[ActionTypes.AddGarden],
     validate: validateAddGarden,
     getDuration: () => 40,
@@ -182,7 +184,7 @@ const Actions = {
     beginStateChange: State.beginAddTemple,
     endStateChange: State.endAddTemple,
     cost: ActionCosts[ActionTypes.AddGarden],
-    finishMessage: (islandName, task) => `a temple was built in ${islandName}!`,
+    finishMessage: ({ islandName }) => `a temple was built in ${islandName}!`,
     validate: validateAddTemple,
     getDuration: () => 100,
     getName: task => `temple`

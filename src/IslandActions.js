@@ -14,7 +14,9 @@ function IslandAction(props) {
 
   const reqs =
     requirements.length > 0 ? (
-      <ul className={'requirements'}>{requirements.map(({ text }) => (text ? <li>{text}</li> : null))}</ul>
+      <ul className={'requirements'}>
+        {requirements.map(({ text }) => (text ? <li>{text}</li> : null))}
+      </ul>
     ) : null
 
   return hide ? null : (
@@ -48,10 +50,13 @@ function IslandActionsList(props) {
         onActionClicked={() => {
           doAction(ActionTypes.SpendEnergy, name, {})
         }}
-        validate={() => Actions[ActionTypes.SpendEnergy].validate(game, name, {})}
+        validate={() =>
+          Actions[ActionTypes.SpendEnergy].validate(game, name, {})
+        }
       >
         <p>
-          Receive a bounty of food and materials from {name} in exchange for all of your current energy.
+          Receive a bounty of food and materials from {name} in exchange for all
+          of your current energy.
           {/*You will receive <b>{}</b> materials
           and <b>{}</b> food.*/}
         </p>
@@ -63,15 +68,13 @@ function IslandActionsList(props) {
         onActionClicked={() => {
           doAction(ActionTypes.AddSettlement, name, {})
         }}
-        validate={() => Actions[ActionTypes.AddSettlement].validate(game, name, {})}
+        validate={() =>
+          Actions[ActionTypes.AddSettlement].validate(game, name, {})
+        }
       >
         <p>
-          Raise a settlement on {name}. At least <b>2 people</b> need to be
-          present on the island.
-        </p>
-        <p>
-          A settlement allows new structures to be built and children to be born
-          on the island.
+          Raise a settlement on {name}. A settlement allows new structures to be
+          built and children to be born on the island.
         </p>
       </IslandAction>
 
@@ -89,7 +92,8 @@ function IslandActionsList(props) {
         </p>
         <p>
           You need people to explore other islands, upgrade your development
-          level and harvest certain resources. You need at least on {name} to get resources from here.
+          level and harvest certain resources. You need at least one person on{' '}
+          {name} to get resources from here.
         </p>
       </IslandAction>
 
@@ -116,9 +120,9 @@ function IslandActionsList(props) {
         validate={() => Actions[ActionTypes.AddGarden].validate(game, name)}
       >
         <p>
-          Plant a garden on {name} to harvest more bonus food per
-          day. Gardens can only be planted on islands with horticultural resources (<b>root vegetables</b> and <b>fruit trees</b>).
-          Up to five gardens can be planted.
+          Plant a garden on {name} to receive bonus horticultural resources (
+          <b>root vegetables</b> and <b>fruit trees</b>). Up to five gardens can
+          be planted on islands with horticultural resources.
         </p>
       </IslandAction>
 
@@ -131,7 +135,7 @@ function IslandActionsList(props) {
         validate={() => Actions[ActionTypes.AddTemple].validate(game, name)}
       >
         <p>
-          Build a temple to find treasures to increase the prestige of {name}. 
+          Build a temple to find treasures to increase the prestige of {name}.
           Once a temple is built, bonus energy will be received per day.
         </p>
         {/*<h5>scattering</h5>

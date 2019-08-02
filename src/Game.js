@@ -123,7 +123,8 @@ const InitialGameState = {
     {}
   ),
   player: InitialPlayerState,
-  world: InitialWorldState
+  world: InitialWorldState,
+  progressItems: []
 }
 
 const MaxDwellings = 5

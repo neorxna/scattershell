@@ -4,17 +4,11 @@ import {
   IsDispersible,
   IsGardenFood
 } from './Resources'
-import { ScattershellLocations } from './Locations'
 import { IslandMaxPopulations } from './IslandProperties'
-import {
-  MaxDwellings,
-  MaxGardens,
-  NumVoyagers,
-  calculateResourcesPerTick,
-  randomChoice,
-  SettlementRequiredPeople
-} from './Game'
+import { ScattershellLocations } from './Locations'
+import { NumVoyagers, calculateResourcesPerTick, randomChoice } from './Game'
 import { Actions, ActionTypes, ActionCosts } from './Actions'
+import * as ActionValidators from './ActionValidation'
 
 function spendEnergy(id, task, fn) {
   return previous => {
@@ -71,14 +65,16 @@ function updateGameState(resourceChanges, islandUpdateFn, willSpend, free) {
       (windΔ && updatedPlayer.wind === wind) ||
       (energyΔ && updatedPlayer.energy === energy)
 
-    let playerUpdate = { ...player, ...(updatedPlayer || {}) }
-    let abort = islandUpdateFn != undefined && islandUpdateFn(islands) === false
-
-    let islandsUpdate =
-      islandUpdateFn == undefined ? islands : islandUpdateFn(islands)
+    const playerUpdate = { ...player, ...(updatedPlayer || {}) }
+    const islandUpdateFnRes =
+      islandUpdateFn != undefined && islandUpdateFn(previous)
+    const abort = islandUpdateFnRes === false
+    const islandsUpdate =
+      islandUpdateFn == undefined ? islands : islandUpdateFnRes
 
     if (!insufficient && willSpend != undefined && !abort) willSpend()
-    let update = {
+
+    const update = {
       ...previous,
       player: playerUpdate,
       islands: islandsUpdate
@@ -89,13 +85,14 @@ function updateGameState(resourceChanges, islandUpdateFn, willSpend, free) {
   }
 }
 
-const islandProperty = (islandName, updateFn) => {
-  return previousIslands => {
-    const island = previousIslands[islandName]
+const islandProperty = (islandId, updateFn) => {
+  return game => {
+    const { islands } = game
+    const island = islands[islandId]
     const update = updateFn(island)
     return {
-      ...previousIslands,
-      [islandName]: {
+      ...islands,
+      [islandId]: {
         ...island,
         ...update
       }
@@ -103,180 +100,199 @@ const islandProperty = (islandName, updateFn) => {
   }
 }
 
-const beginAddPerson = (islandName, task, fn) =>
+const actionPermitted = validations =>
+  validations.filter(({ met }) => !met).length === 0
+
+const beginAddPerson = (islandId, task, willSpendFn) =>
   updateGameState(
     ActionCosts[ActionTypes.AddPerson],
-    previousIslands => {
-      const island = previousIslands[islandName]
-      const { population, bonusPopulation, hasSettlement } = island
-      const islandLocation = ScattershellLocations[islandName]
-
-      const maxPopulation = IslandMaxPopulations[islandLocation.type]
-      const totalPopulationLimit = bonusPopulation + maxPopulation
-
-      return population === totalPopulationLimit || !hasSettlement
-        ? false
-        : previousIslands
+    game => {
+      const validations = ActionValidators.validateAddPerson(game, islandId)
+      const permitted = actionPermitted(validations)
+      return permitted ? game.islands : false
     },
-    fn
+    willSpendFn
   )
 
-const endAddPerson = islandName =>
+const endAddPerson = islandId =>
   updateGameState(
     {},
-    islandProperty(islandName, island => ({
+    islandProperty(islandId, island => ({
       population: island.population + 1
     }))
   )
 
 // TODO use action validators
 
-const beginAddDwelling = (islandName, task, fn) =>
+const beginAddDwelling = (islandId, task, willSpendFn) =>
   updateGameState(
     ActionCosts[ActionTypes.AddDwelling],
-    previousIslands => {
-      const island = previousIslands[islandName]
-      const { numDwellings, hasSettlement } = island
-
-      return numDwellings === MaxDwellings || !hasSettlement
-        ? false
-        : previousIslands
+    game => {
+      const validations = ActionValidators.validateAddDwelling(game, islandId)
+      const permitted = actionPermitted(validations)
+      return permitted ? game.islands : false
     },
-    fn
+    willSpendFn
   )
 
-const endAddDwelling = islandName =>
+const endAddDwelling = islandId =>
   updateGameState(
     {},
-    islandProperty(islandName, ({ numDwellings, bonusPopulation }) => ({
+    islandProperty(islandId, ({ numDwellings, bonusPopulation }) => ({
       numDwellings: numDwellings + 1,
       bonusPopulation: bonusPopulation + 5
     }))
   )
 
-const beginAddSettlement = (islandName, task, fn) =>
+const beginAddSettlement = (islandId, task, willSpendFn) =>
   updateGameState(
     ActionCosts[ActionTypes.AddSettlement],
-    previousIslands => {
-      const island = previousIslands[islandName]
-      const { population } = island
-      // requires N people on the island
-      return population < SettlementRequiredPeople ? false : previousIslands
+    game => {
+      const validations = ActionValidators.validateAddSettlement(game, islandId)
+      const permitted = actionPermitted(validations)
+      return permitted ? game.islands : false
     },
-    fn
+    willSpendFn
   )
 
-const endAddSettlement = (islandName, task) =>
+const endAddSettlement = (islandId, task) =>
   updateGameState(
     {},
-    islandProperty(islandName, island => ({
+    islandProperty(islandId, island => ({
       hasSettlement: true
     }))
   )
 
-const beginAddTemple = (islandName, task, fn) =>
+const beginAddTemple = (islandId, task, willSpendFn) =>
   updateGameState(
     ActionCosts[ActionTypes.AddTemple],
-    previousIslands => {
-      const island = previousIslands[islandName]
-      const { population } = island
-      // requires 5 people on the island
-      return population < 5 ? false : previousIslands
+    game => {
+      const validations = ActionValidators.validateAddTemple(game, islandId)
+      const permitted = actionPermitted(validations)
+      return permitted ? game.islands : false
     },
-    fn
+    willSpendFn
   )
 
-const endAddTemple = islandName =>
+const endAddTemple = islandId =>
   updateGameState(
     {},
-    islandProperty(islandName, island => ({
+    islandProperty(islandId, island => ({
       hasTemple: true
     }))
   )
 
-// TODO generic begin validator
-const beginAddGarden = (islandName, task, fn) =>
+const beginAddGarden = (islandId, task, willSpendFn) =>
   updateGameState(
     ActionCosts[ActionTypes.AddGarden],
-    previousIslands => {
-      // requires 3 people and not islands > 5
-      const island = previousIslands[islandName]
-      const { numGardens } = island
-      const isMaxGardens = numGardens === MaxGardens
-      return isMaxGardens ? false : previousIslands
+    game => {
+      const validations = ActionValidators.validateAddGarden(game, islandId)
+      const permitted = actionPermitted(validations)
+      return permitted ? game.islands : false
     },
-    fn
+    willSpendFn
   )
 
-const endAddGarden = islandName =>
+const endAddGarden = islandId =>
   updateGameState(
     {},
-    islandProperty(islandName, island => {
+    islandProperty(islandId, island => {
       const { numGardens } = island
       return {
         numGardens: numGardens + 1
       }
     })
   )
+
+const updateNothing = x => x.islands
+
+function launchVoyage(islandId, task) {
+  const { actionType, isBeginning } = task
+
+  const removePopulationFrom = game => {
+    const { islands } = game
+    const island = islands[islandId]
+    // make sure we can remove the population from source island
+    const validations = ActionValidators.validateLaunch(game, islandId, task)
+    const permitted = actionPermitted(validations)
+
+    const numVoyagers = NumVoyagers[actionType]
+    const islandsUpdate = {
+      ...islands,
+      [islandId]: {
+        ...island,
+        population: island.population - numVoyagers
+      }
+    }
+    return permitted ? islandsUpdate : false
+  }
+
+  const { cost } = Actions[actionType]
+  const voyageCost = isBeginning ? {} : cost
+  const voyageUpdate = isBeginning ? updateNothing : removePopulationFrom
+  return updateGameState(voyageCost, voyageUpdate)
+}
+
 /*
   when an island is discovered via voyage, the voyaging people seed the island's population.
   - unless the destination is a rocky island, in which case the people are lost.
   - a fleet of people is needed to establish a settlement.
   - a settlement allows the population to be increased by clicking 'add person'
   - the safe choice is to launch an outrigger first to scout, then a fleet to populate 
-  
 */
-function arriveVoyage(fromName, voyage) {
-  const { toName, actionType } = voyage
+function arriveVoyage(fromName, task) {
+  const { toName, actionType, isBeginning } = task
   const numPeople = NumVoyagers[actionType]
   return updateGameState(
     {},
-    previousIslands => {
-      const previousTo = previousIslands[toName]
-      const previousFrom = previousIslands[fromName] || {
+    game => {
+      const { islands } = game
+      const toIsland = islands[toName]
+      const fromIsland = islands[fromName] || {
         scatterings: [],
         resources: []
       }
 
-      // ensure we don't go over the max population of the destination
-      const toLocation = ScattershellLocations[toName]
-      const maxPopulation = IslandMaxPopulations[toLocation.type]
-
-      const { bonusPopulation } = previousTo
-      const { resources } = previousFrom
-
-      const totalPopulationLimit = bonusPopulation + maxPopulation
-      const maxPop = previousTo.population + numPeople >= totalPopulationLimit
-
       // if there are any dispersible resources on the island and voyage is fleet,
       // transfer one at random to the destination island
       // only transfer resources that don't already exist on destination
+      const { resources } = fromIsland
       const dispersibleResources =
         actionType === ActionTypes.LaunchFleet
           ? resources.filter(
               resource =>
                 IsDispersible[resource] &&
-                previousTo.resources.indexOf(resource) === -1
+                toIsland.resources.indexOf(resource) === -1
             )
           : []
 
       const dispersed =
-        dispersibleResources.length > 0 ? randomChoice(dispersibleResources) : null
+        dispersibleResources.length > 0
+          ? randomChoice(dispersibleResources)
+          : null
 
-      const toResources = [...previousTo.resources, dispersed].filter(
+      const toResources = [...toIsland.resources, dispersed].filter(
         x => x != null
       )
 
+      const toLocation = ScattershellLocations[toName]
+      const toMaxPopulation = IslandMaxPopulations[toLocation.type]
+      const toTotalPopulationLimit = toIsland.bonusPopulation + toMaxPopulation
+
+      const newPopulation = toIsland.population + numPeople
+      const newPopulationLimited =
+        newPopulation > toTotalPopulationLimit
+          ? toTotalPopulationLimit
+          : newPopulation
+
       return {
-        ...previousIslands,
+        ...islands,
         [toName]: {
-          ...previousTo,
+          ...toIsland,
           isDiscovered: true,
           resources: toResources,
-          scatterings: [...previousFrom.scatterings],
-          population: maxPop
-            ? previousTo.population
-            : previousTo.population + numPeople
+          scatterings: [...toIsland.scatterings],
+          population: newPopulationLimited
         }
       }
     },
@@ -346,33 +362,6 @@ const worldTick = () =>
       year: weekOfYear === 52 ? year + 1 : year
     }
   })
-
-function launchVoyage(fromName, task, fn) {
-  const { actionType, toName, isBeginning } = task
-
-  const removePopulationFrom = previousIslands => {
-    // remove the population from source island
-    let previousFrom = previousIslands[fromName]
-    let numVoyagers = NumVoyagers[actionType]
-    let enough = previousFrom.population >= numVoyagers
-
-    // make sure we have enough people on the fromIsland
-    return enough
-      ? {
-          ...previousIslands,
-          [fromName]: {
-            ...previousFrom,
-            population: previousFrom.population - numVoyagers
-          }
-        }
-      : false
-  }
-
-  const { cost } = Actions[actionType]
-  const voyageCost = isBeginning ? {} : cost
-  const voyageUpdate = isBeginning ? x => x : removePopulationFrom
-  return updateGameState(voyageCost, voyageUpdate, fn)
-}
 
 export {
   gameTick,

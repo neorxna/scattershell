@@ -6,16 +6,14 @@ import { IslandAction } from './IslandActions'
 import { ScattershellLocations } from './Locations'
 
 function VoyageChoicesList(props) {
-  const { island, islands, progress, game, doAction } = props
+  const { island, islands, game, doAction } = props
   const { name, neighbours } = island
 
   /* allow voyages to neighbours that have a population less than 5  */
   const voyagableNeighbours = neighbours.filter(
     neighbourName =>
       //!islands[neighbourName].isDiscovered &&
-      islands[neighbourName].population < 5 &&
-      progress.items.filter(item => item.destName === neighbourName).length ===
-        0
+      islands[neighbourName].population < 5
   )
 
   return (
@@ -37,9 +35,24 @@ function VoyageChoicesList(props) {
         {voyagableNeighbours.map((toName, n) => {
           const destination = islands[toName]
           const { isDiscovered } = destination
-          const fromName = name
+          const islandName = name
           const distance =
-            ScattershellLocations[fromName].neighbourDistance[toName]
+            ScattershellLocations[islandName].neighbourDistance[toName]
+
+          const outriggerTask = {
+            actionType: ActionTypes.LaunchOutrigger,
+            isBeginning: false,
+            toName,
+            islandName
+          }
+
+          const fleetTask = {
+            actionType: ActionTypes.LaunchFleet,
+            isBeginning: false,
+            toName,
+            islandName
+          }
+
           return (
             <li
               style={{
@@ -58,29 +71,27 @@ function VoyageChoicesList(props) {
               <IslandAction
                 actionType={ActionTypes.LaunchOutrigger}
                 onActionClicked={() => {
-                  doAction(ActionTypes.LaunchOutrigger, name, {
-                    actionType: ActionTypes.LaunchOutrigger,
-                    isBeginning: false,
-                    toName,
-                    fromName
-                  })
+                  doAction(ActionTypes.LaunchOutrigger, name, outriggerTask)
                 }}
                 validate={() =>
-                  Actions[ActionTypes.LaunchOutrigger].validate(game, name, {})
+                  Actions[ActionTypes.LaunchOutrigger].validate(
+                    game,
+                    name,
+                    outriggerTask
+                  )
                 }
               />
               <IslandAction
                 actionType={ActionTypes.LaunchFleet}
                 onActionClicked={() => {
-                  doAction(ActionTypes.LaunchFleet, name, {
-                    actionType: ActionTypes.LaunchFleet,
-                    isBeginning: false,
-                    toName,
-                    fromName
-                  })
+                  doAction(ActionTypes.LaunchFleet, name, fleetTask)
                 }}
                 validate={() =>
-                  Actions[ActionTypes.LaunchFleet].validate(game, name, {})
+                  Actions[ActionTypes.LaunchFleet].validate(
+                    game,
+                    name,
+                    fleetTask
+                  )
                 }
               />
             </li>

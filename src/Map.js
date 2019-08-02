@@ -28,7 +28,7 @@ const defaultScattershellMapProps = {
     fill: Colors.Green, //Colors.Outline,
     fillStyle: 'solid',
     hachureAngle: 65,
-    roughness: 2,
+    roughness: 1,
     stroke: 0,
     fillWeight: 2,
     bowing: 2

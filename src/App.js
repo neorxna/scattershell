@@ -8,11 +8,11 @@ import ScattershellMap from './Map'
 import { GameMeters } from './GameMeters'
 import { useScattershellEngine, tickInterval } from './Engine'
 import { StartingLocation, islandsDetails } from './Game'
-import { ProgressStatus, useProgress } from './Progress'
+import { ProgressStatus } from './Progress'
 import { Messages, useMessaging } from './Messages'
 import { Calendar } from './Calendar'
-
-const VERSION = '0.7'
+import { LoadSavePanel } from './LoadSave'
+const VERSION = '0.7.2'
 const intervalDuration = tickInterval
 
 const json = _ => JSON.stringify(_, undefined, 4)
@@ -43,12 +43,15 @@ function useInterval(callback, delay) {
 
 function App() {
   const messaging = useMessaging()
-  const progress = useProgress()
 
-  const { gameState, tick, doAction, deltas } = useScattershellEngine(
-    messaging,
-    progress
-  )
+  const {
+    gameState,
+    tick,
+    doAction,
+    deltas,
+    loadSaveProvider
+  } = useScattershellEngine(messaging)
+
   const { world, player } = gameState
   // the island that is currently being viewed.
   const [currentIsland, setCurrentIsland] = useState(StartingLocation)
@@ -65,15 +68,15 @@ function App() {
           <h1 className={'title title-title'} title={VERSION}>
             scattershell
           </h1>
-
           <div className={'fixed'}>
+            <LoadSavePanel game={gameState} loadSaveProvider={loadSaveProvider} />
+
             <GameMeters deltas={deltas} player={player} />
-            <ProgressStatus progress={progress} />
+            <ProgressStatus game={gameState} />
             <Messages messaging={messaging} />
             <Calendar world={world} />
           </div>
-
-          <section style={{marginTop:'8em'}}>
+          <section style={{ marginTop: '8em' }}>
             <ScattershellMap
               islands={islands}
               currentIsland={currentIsland}
@@ -88,7 +91,6 @@ function App() {
             player={player}
             island={islands[currentIsland]}
             islands={islands}
-            progress={progress}
             doAction={doAction}
           />
         </section>

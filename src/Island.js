@@ -7,7 +7,8 @@ import { IslandActionsList } from './IslandActions'
 import { VoyageChoicesList } from './IslandVoyages'
 
 function Island(props) {
-  const { game, island, islands, player, world, doAction, progress } = props
+  const { game, island, islands, doAction, progressProvider } = props
+  const { player, world } = game
   const { type, name, resources, isDiscovered } = island
 
   const islandActions = (
@@ -15,8 +16,6 @@ function Island(props) {
       <IslandActionsList
         game={game}
         island={island}
-        player={player}
-        world={world}
         doAction={doAction}
       />
     </section>
@@ -29,7 +28,6 @@ function Island(props) {
         island={island}
         islands={islands}
         game={game}
-        progress={progress}
         doAction={doAction}
       />
     </section>

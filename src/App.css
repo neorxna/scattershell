@@ -45,12 +45,11 @@ main {
 .left {
   overflow-y: auto;
   overflow-x: hidden;
-  position: fixed;
+  position: absolute;
   max-width: 530px;
   height: 100%;
   margin-left: 16px;
   padding: 0px 16px;
-  user-select: none;
 }
 
 .right {
@@ -192,7 +191,7 @@ overflow-x:hidden;
 }
 
 .fixed {
-  position:fixed;
+  position: absolute;
 }
 
 .journeys-container {
@@ -214,7 +213,6 @@ overflow-x:hidden;
 
 .requirements { /*
   color: #8d8d8d; */
-  font-weight: bold;
 }
 
 .requirements li {
@@ -230,4 +228,10 @@ overflow-x:hidden;
 
 .voyage-hints {
   padding: 0px !important;
+}
+
+.savefile-textarea {
+  width: 100%;
+  resize: none;
+  height: 400px;
 }
